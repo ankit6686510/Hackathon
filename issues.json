@@ -1,0 +1,146 @@
+[
+  {
+    "id": "JSP-1001",
+    "title": "UPI Payment Failed with Error 5003",
+    "description": "UPI payment stuck in processing, timeout after 10s, Axis PSP.",
+    "resolution": "Increased PSP timeout to 30s and added retry with idempotency key.",
+    "tags": ["UPI", "Timeout", "AxisBank", "Payments"],
+    "created_at": "2024-03-12",
+    "resolved_by": "alice@juspay.in"
+  },
+  {
+    "id": "JSP-1002",
+    "title": "Card Tokenization Failing BIN 65xx",
+    "description": "Customers with BIN 65xx fail token provisioning with 422.",
+    "resolution": "Patched gateway schema for BIN range, re-tried provisioning flow.",
+    "tags": ["Cards", "Tokenization", "Gateway"],
+    "created_at": "2024-04-01",
+    "resolved_by": "bob@juspay.in"
+  },
+  {
+    "id": "JSP-1003",
+    "title": "Mandate Creation Timeout on UPI Autopay",
+    "description": "Autopay creation intermittently times out with HDFC PSP.",
+    "resolution": "Enabled async callback handling and exponential backoff to 45s.",
+    "tags": ["UPI", "Autopay", "HDFC"],
+    "created_at": "2024-04-05",
+    "resolved_by": "carol@juspay.in"
+  },
+  {
+    "id": "JSP-1004",
+    "title": "Refund Webhook Not Processed",
+    "description": "Refund webhooks dropped due to 429 from merchant endpoint.",
+    "resolution": "Introduced DLQ with retry and jitter; increased worker pool size.",
+    "tags": ["Refunds", "Webhooks", "Reliability"],
+    "created_at": "2024-04-10",
+    "resolved_by": "dave@juspay.in"
+  },
+  {
+    "id": "JSP-1005",
+    "title": "UPI Intent Deeplink Broken on Android 14",
+    "description": "Intent URI not opening PSP on certain OEM builds.",
+    "resolution": "Normalized intent format and added fallback to collect flow.",
+    "tags": ["UPI", "Android", "Intent"],
+    "created_at": "2024-04-12",
+    "resolved_by": "erin@juspay.in"
+  },
+  {
+    "id": "JSP-1006",
+    "title": "Settlement File Parsing Error",
+    "description": "Daily settlement CSV has extra delimiter from bank side.",
+    "resolution": "Switched to robust CSV parser and validation rules with quarantine.",
+    "tags": ["Settlement", "CSV", "Bank"],
+    "created_at": "2024-04-14",
+    "resolved_by": "frank@juspay.in"
+  },
+  {
+    "id": "JSP-1007",
+    "title": "OTP Delivery Latency >60s",
+    "description": "Spike in SMS delays during peak 8-9pm window.",
+    "resolution": "Enabled multi-PSP fallback routing and pre-warm sender pools.",
+    "tags": ["OTP", "SMS", "Latency"],
+    "created_at": "2024-04-20",
+    "resolved_by": "grace@juspay.in"
+  },
+  {
+    "id": "JSP-1008",
+    "title": "Web Checkout 500 on Apple Pay Region",
+    "description": "Server error for Apple Pay region header missing.",
+    "resolution": "Added region header default and stricter validation with 400.",
+    "tags": ["Checkout", "ApplePay", "Backend"],
+    "created_at": "2024-04-22",
+    "resolved_by": "harry@juspay.in"
+  },
+  {
+    "id": "JSP-1009",
+    "title": "Dispute Callback Signature Mismatch",
+    "description": "Signatures fail HMAC validation for dispute callbacks.",
+    "resolution": "Rotated shared secret and fixed canonicalization of headers.",
+    "tags": ["Disputes", "Security", "HMAC"],
+    "created_at": "2024-04-25",
+    "resolved_by": "ivy@juspay.in"
+  },
+  {
+    "id": "JSP-1010",
+    "title": "UPI PSP Switch Overdue",
+    "description": "Axis PSP degraded; need dynamic PSP routing.",
+    "resolution": "Enabled health-based routing and PSP weight adjustments in runtime.",
+    "tags": ["UPI", "Routing", "Reliability"],
+    "created_at": "2024-04-28",
+    "resolved_by": "jack@juspay.in"
+  },
+  {
+    "id": "JSP-1011",
+    "title": "Webhook Retries Exhausted for Merchant X",
+    "description": "Webhook queue backlogged; merchant endpoint flaky.",
+    "resolution": "Added circuit breaker and progressive backoff caps.",
+    "tags": ["Webhooks", "Resilience", "DLQ"],
+    "created_at": "2024-05-02",
+    "resolved_by": "kate@juspay.in"
+  },
+  {
+    "id": "JSP-1012",
+    "title": "PG Authorization 3DS Step Fails",
+    "description": "3DS step up fails due to ACS timeout.",
+    "resolution": "Extended 3DS timeout and cached ACS metadata for BINs.",
+    "tags": ["Cards", "3DS", "Authorization"],
+    "created_at": "2024-05-05",
+    "resolved_by": "leo@juspay.in"
+  },
+  {
+    "id": "JSP-1013",
+    "title": "KYC Document Upload Fails on Large Images",
+    "description": "Uploads >5MB fail with 413 from CDN layer.",
+    "resolution": "Enabled client-side compression and increased CDN limit to 10MB.",
+    "tags": ["KYC", "Uploads", "CDN"],
+    "created_at": "2024-05-07",
+    "resolved_by": "mira@juspay.in"
+  },
+  {
+    "id": "JSP-1014",
+    "title": "Payouts Batch Job Skipped Records",
+    "description": "Batch job skipped records when retrying partial failures.",
+    "resolution": "Implemented idempotent batch offsets and per-item cursors.",
+    "tags": ["Payouts", "Batch", "Jobs"],
+    "created_at": "2024-05-09",
+    "resolved_by": "nate@juspay.in"
+  },
+  {
+    "id": "JSP-1015",
+    "title": "UPI QR Payments Not Reflected in T+1",
+    "description": "QR payments appear delayed in reconciliation report.",
+    "resolution": "Fixed timezone normalization and added late-arrival window in recon.",
+    "tags": ["UPI", "QR", "Reconciliation"],
+    "created_at": "2024-05-11",
+    "resolved_by": "olga@juspay.in"
+  },
+  {
+    "id": "JSP-1016",
+    "title": "S2S Callback Retries Overwhelming Service",
+    "description": "High retry rate causing thundering herd on recovery.",
+    "resolution": "Added exponential backoff with jitter and capped concurrent retries.",
+    "tags": ["Callbacks", "Resilience", "Traffic"],
+    "created_at": "2024-05-13",
+    "resolved_by": "paul@juspay.in"
+  }
+]
