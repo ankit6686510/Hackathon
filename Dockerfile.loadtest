@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+# Install Artillery and dependencies
+RUN npm install -g artillery@latest
+
+# Set working directory
+WORKDIR /app
+
+# Copy load test configuration
+COPY load-tests/ ./load-tests/
+
+# Create results directory
+RUN mkdir -p results
+
+# Install additional Artillery plugins
+RUN npm install -g artillery-plugin-metrics-by-endpoint artillery-plugin-publish-metrics
+
+# Default command to run load tests
+CMD ["sh", "-c", "artillery run load-tests/artillery-config.yml --output results/load-test-$(date +%Y%m%d-%H%M%S).json"]

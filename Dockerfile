@@ -1,4 +1,4 @@
-# Multi-stage Docker build for SherlockAI API
+# Multi-stage build for production optimization
 FROM python:3.11-slim as builder
 
 # Set environment variables
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate virtual environment
+# Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
@@ -34,30 +34,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r SherlockAI \
-    && useradd -r -g SherlockAI SherlockAI
+    && groupadd -r appuser && useradd -r -g appuser appuser
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
 # Copy application code
 COPY . .
 
-# Change ownership to non-root user
-RUN chown -R SherlockAI:SherlockAI /app
+# Create logs directory
+RUN mkdir -p logs && chown -R appuser:appuser /app
 
 # Switch to non-root user
-USER SherlockAI
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health/live || exit 1
-
 # Run the application
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

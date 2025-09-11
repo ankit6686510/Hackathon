@@ -1,52 +1,67 @@
 version: '3.8'
 
 services:
-  # SherlockAI API
+  # Backend API
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - DEBUG=true
-      - ENVIRONMENT=development
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - DATABASE_URL=postgresql+asyncpg://SherlockAI:password@postgres:5432/SherlockAI
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/sherlockaidb
       - REDIS_URL=redis://redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PINECONE_API_KEY=${PINECONE_API_KEY}
-      - PINECONE_INDEX=${PINECONE_INDEX:-juspay-issues}
-      - LOG_LEVEL=INFO
+      - PINECONE_INDEX=${PINECONE_INDEX}
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     volumes:
-      - .:/app
+      - ./logs:/app/logs
     restart: unless-stopped
-    networks:
-      - SherlockAI-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_APP_NAME=SherlockAI
+    depends_on:
+      - api
+    restart: unless-stopped
 
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=SherlockAI
+      - POSTGRES_DB=sherlockaidb
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=SherlockAI
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U SherlockAI -d SherlockAI"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-    networks:
-      - SherlockAI-network
 
   # Redis Cache
   redis:
@@ -55,32 +70,14 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - SherlockAI-network
+      retries: 3
 
-  # Frontend (optional for development)
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - api
-    restart: unless-stopped
-    networks:
-      - SherlockAI-network
-
-  # Monitoring with Prometheus (optional)
+  # Prometheus for Metrics
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -93,20 +90,18 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
     restart: unless-stopped
-    networks:
-      - SherlockAI-network
-    profiles:
-      - monitoring
 
-  # Grafana for visualization (optional)
+  # Grafana for Dashboards
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
@@ -114,10 +109,19 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
-    networks:
-      - SherlockAI-network
+
+  # Load Testing with Artillery
+  load-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.loadtest
+    volumes:
+      - ./load-tests:/app/load-tests
+      - ./load-test-results:/app/results
+    depends_on:
+      - api
     profiles:
-      - monitoring
+      - testing
 
 volumes:
   postgres_data:
@@ -126,5 +130,5 @@ volumes:
   grafana_data:
 
 networks:
-  SherlockAI-network:
-    driver: bridge
+  default:
+    name: sherlockai-network

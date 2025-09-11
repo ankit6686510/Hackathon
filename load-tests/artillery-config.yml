@@ -1,0 +1,135 @@
+config:
+  target: 'http://localhost:8000'
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up"
+    # Sustained load
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load"
+    # Peak load
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+    # Cool-down
+    - duration: 30
+      arrivalRate: 10
+      name: "Cool-down"
+  
+  # Performance thresholds
+  ensure:
+    - http.response_time.p95: 500  # 95th percentile under 500ms
+    - http.response_time.p99: 1000 # 99th percentile under 1s
+    - http.codes.200: 95           # 95% success rate
+    - http.codes.429: 5            # Max 5% rate limited
+
+  # Plugins for enhanced reporting
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    publish-metrics:
+      - type: prometheus
+        pushgateway: 'http://localhost:9091'
+
+scenarios:
+  # Health check scenario
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/v1/health"
+          name: "health_check"
+
+  # Search scenarios
+  - name: "Semantic Search - Payment Issues"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/v1/search"
+          name: "search_payment_issues"
+          json:
+            query: "UPI payment failed with error 5003"
+            top_k: 3
+            search_type: "semantic"
+          capture:
+            - json: "$.results[0].id"
+              as: "result_id"
+      - think: 2
+      - post:
+          url: "/api/v1/analytics/feedback"
+          name: "submit_feedback"
+          json:
+            query: "UPI payment failed with error 5003"
+            result_id: "{{ result_id }}"
+            rating: 5
+            helpful: true
+            feedback_text: "Very helpful solution!"
+
+  - name: "Semantic Search - API Issues"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/v1/search"
+          name: "search_api_issues"
+          json:
+            query: "API returning 500 internal server error"
+            top_k: 3
+            search_type: "semantic"
+
+  - name: "Semantic Search - Database Issues"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/v1/search"
+          name: "search_db_issues"
+          json:
+            query: "Database connection timeout"
+            top_k: 5
+            search_type: "semantic"
+
+  # Analytics scenarios
+  - name: "Analytics Dashboard"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/v1/analytics/dashboard"
+          name: "analytics_dashboard"
+      - get:
+          url: "/api/v1/analytics/search-patterns"
+          name: "search_patterns"
+      - get:
+          url: "/api/v1/analytics/performance-metrics"
+          name: "performance_metrics"
+
+  # Capability queries
+  - name: "Capability Queries"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/v1/search"
+          name: "capability_query"
+          json:
+            query: "What can you help with?"
+            top_k: 3
+            search_type: "semantic"
+
+# Custom functions for dynamic data
+functions:
+  generateRandomQuery:
+    - "Payment gateway timeout"
+    - "SSL certificate validation failed"
+    - "Webhook retries exhausted"
+    - "Database deadlock detected"
+    - "Redis connection failed"
+    - "Authentication token expired"
+    - "Rate limit exceeded"
+    - "Memory leak in service"
+    - "Disk space full"
+    - "Network connectivity issues"
