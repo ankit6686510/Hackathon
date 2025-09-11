@@ -11,8 +11,8 @@
 ### **🚀 Start Demo Now:**
 
 ```bash
-# 1. Start the beautiful Streamlit frontend
-streamlit run app.py
+# 1. Start the frontend
+npm run dev
 
 # 2. Open browser to: http://localhost:8501
 # 3. Try these demo queries:
