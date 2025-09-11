@@ -4,7 +4,12 @@
     "title": "UPI Payment Failed with Error 5003",
     "description": "UPI payment stuck in processing, timeout after 10s, Axis PSP.",
     "resolution": "Increased PSP timeout to 30s and added retry with idempotency key.",
-    "tags": ["UPI", "Timeout", "AxisBank", "Payments"],
+    "tags": [
+      "UPI",
+      "Timeout",
+      "AxisBank",
+      "Payments"
+    ],
     "created_at": "2024-03-12",
     "resolved_by": "alice@juspay.in"
   },
@@ -13,7 +18,11 @@
     "title": "Card Tokenization Failing BIN 65xx",
     "description": "Customers with BIN 65xx fail token provisioning with 422.",
     "resolution": "Patched gateway schema for BIN range, re-tried provisioning flow.",
-    "tags": ["Cards", "Tokenization", "Gateway"],
+    "tags": [
+      "Cards",
+      "Tokenization",
+      "Gateway"
+    ],
     "created_at": "2024-04-01",
     "resolved_by": "bob@juspay.in"
   },
@@ -22,7 +31,11 @@
     "title": "Mandate Creation Timeout on UPI Autopay",
     "description": "Autopay creation intermittently times out with HDFC PSP.",
     "resolution": "Enabled async callback handling and exponential backoff to 45s.",
-    "tags": ["UPI", "Autopay", "HDFC"],
+    "tags": [
+      "UPI",
+      "Autopay",
+      "HDFC"
+    ],
     "created_at": "2024-04-05",
     "resolved_by": "carol@juspay.in"
   },
@@ -31,7 +44,11 @@
     "title": "Refund Webhook Not Processed",
     "description": "Refund webhooks dropped due to 429 from merchant endpoint.",
     "resolution": "Introduced DLQ with retry and jitter; increased worker pool size.",
-    "tags": ["Refunds", "Webhooks", "Reliability"],
+    "tags": [
+      "Refunds",
+      "Webhooks",
+      "Reliability"
+    ],
     "created_at": "2024-04-10",
     "resolved_by": "dave@juspay.in"
   },
@@ -40,7 +57,11 @@
     "title": "UPI Intent Deeplink Broken on Android 14",
     "description": "Intent URI not opening PSP on certain OEM builds.",
     "resolution": "Normalized intent format and added fallback to collect flow.",
-    "tags": ["UPI", "Android", "Intent"],
+    "tags": [
+      "UPI",
+      "Android",
+      "Intent"
+    ],
     "created_at": "2024-04-12",
     "resolved_by": "erin@juspay.in"
   },
@@ -49,7 +70,11 @@
     "title": "Settlement File Parsing Error",
     "description": "Daily settlement CSV has extra delimiter from bank side.",
     "resolution": "Switched to robust CSV parser and validation rules with quarantine.",
-    "tags": ["Settlement", "CSV", "Bank"],
+    "tags": [
+      "Settlement",
+      "CSV",
+      "Bank"
+    ],
     "created_at": "2024-04-14",
     "resolved_by": "frank@juspay.in"
   },
@@ -58,7 +83,11 @@
     "title": "OTP Delivery Latency >60s",
     "description": "Spike in SMS delays during peak 8-9pm window.",
     "resolution": "Enabled multi-PSP fallback routing and pre-warm sender pools.",
-    "tags": ["OTP", "SMS", "Latency"],
+    "tags": [
+      "OTP",
+      "SMS",
+      "Latency"
+    ],
     "created_at": "2024-04-20",
     "resolved_by": "grace@juspay.in"
   },
@@ -67,7 +96,11 @@
     "title": "Web Checkout 500 on Apple Pay Region",
     "description": "Server error for Apple Pay region header missing.",
     "resolution": "Added region header default and stricter validation with 400.",
-    "tags": ["Checkout", "ApplePay", "Backend"],
+    "tags": [
+      "Checkout",
+      "ApplePay",
+      "Backend"
+    ],
     "created_at": "2024-04-22",
     "resolved_by": "harry@juspay.in"
   },
@@ -76,7 +109,11 @@
     "title": "Dispute Callback Signature Mismatch",
     "description": "Signatures fail HMAC validation for dispute callbacks.",
     "resolution": "Rotated shared secret and fixed canonicalization of headers.",
-    "tags": ["Disputes", "Security", "HMAC"],
+    "tags": [
+      "Disputes",
+      "Security",
+      "HMAC"
+    ],
     "created_at": "2024-04-25",
     "resolved_by": "ivy@juspay.in"
   },
@@ -85,7 +122,11 @@
     "title": "UPI PSP Switch Overdue",
     "description": "Axis PSP degraded; need dynamic PSP routing.",
     "resolution": "Enabled health-based routing and PSP weight adjustments in runtime.",
-    "tags": ["UPI", "Routing", "Reliability"],
+    "tags": [
+      "UPI",
+      "Routing",
+      "Reliability"
+    ],
     "created_at": "2024-04-28",
     "resolved_by": "jack@juspay.in"
   },
@@ -94,7 +135,11 @@
     "title": "Webhook Retries Exhausted for Merchant X",
     "description": "Webhook queue backlogged; merchant endpoint flaky.",
     "resolution": "Added circuit breaker and progressive backoff caps.",
-    "tags": ["Webhooks", "Resilience", "DLQ"],
+    "tags": [
+      "Webhooks",
+      "Resilience",
+      "DLQ"
+    ],
     "created_at": "2024-05-02",
     "resolved_by": "kate@juspay.in"
   },
@@ -103,7 +148,11 @@
     "title": "PG Authorization 3DS Step Fails",
     "description": "3DS step up fails due to ACS timeout.",
     "resolution": "Extended 3DS timeout and cached ACS metadata for BINs.",
-    "tags": ["Cards", "3DS", "Authorization"],
+    "tags": [
+      "Cards",
+      "3DS",
+      "Authorization"
+    ],
     "created_at": "2024-05-05",
     "resolved_by": "leo@juspay.in"
   },
@@ -112,7 +161,11 @@
     "title": "KYC Document Upload Fails on Large Images",
     "description": "Uploads >5MB fail with 413 from CDN layer.",
     "resolution": "Enabled client-side compression and increased CDN limit to 10MB.",
-    "tags": ["KYC", "Uploads", "CDN"],
+    "tags": [
+      "KYC",
+      "Uploads",
+      "CDN"
+    ],
     "created_at": "2024-05-07",
     "resolved_by": "mira@juspay.in"
   },
@@ -121,7 +174,11 @@
     "title": "Payouts Batch Job Skipped Records",
     "description": "Batch job skipped records when retrying partial failures.",
     "resolution": "Implemented idempotent batch offsets and per-item cursors.",
-    "tags": ["Payouts", "Batch", "Jobs"],
+    "tags": [
+      "Payouts",
+      "Batch",
+      "Jobs"
+    ],
     "created_at": "2024-05-09",
     "resolved_by": "nate@juspay.in"
   },
@@ -130,7 +187,11 @@
     "title": "UPI QR Payments Not Reflected in T+1",
     "description": "QR payments appear delayed in reconciliation report.",
     "resolution": "Fixed timezone normalization and added late-arrival window in recon.",
-    "tags": ["UPI", "QR", "Reconciliation"],
+    "tags": [
+      "UPI",
+      "QR",
+      "Reconciliation"
+    ],
     "created_at": "2024-05-11",
     "resolved_by": "olga@juspay.in"
   },
@@ -139,7 +200,11 @@
     "title": "S2S Callback Retries Overwhelming Service",
     "description": "High retry rate causing thundering herd on recovery.",
     "resolution": "Added exponential backoff with jitter and capped concurrent retries.",
-    "tags": ["Callbacks", "Resilience", "Traffic"],
+    "tags": [
+      "Callbacks",
+      "Resilience",
+      "Traffic"
+    ],
     "created_at": "2024-05-13",
     "resolved_by": "paul@juspay.in"
   },
@@ -148,26 +213,99 @@
     "title": "IRCTC-Kotak UPI Integration Webhook Consumption Failure",
     "description": "Complex multi-layered issue with IRCTC-Kotak UPI integration where webhooks were not being consumed properly. Problems included: 1) Webhook endpoint not receiving callbacks from Kotak, 2) IP whitelisting issues between IRCTC and Kotak systems, 3) Callback URL configuration mismatches, 4) Cross-team coordination challenges between IRCTC, Kotak, and Juspay teams, 5) Network connectivity and firewall rules blocking webhook delivery, 6) Authentication and authorization issues in webhook validation, 7) Timeout configurations causing webhook delivery failures. The issue required extensive debugging across multiple systems and stakeholder coordination.",
     "resolution": "Multi-step resolution involving: 1) Coordinated with Kotak team to verify and update IP whitelist for IRCTC webhook endpoints, 2) Reconfigured callback URLs to match exact format expected by Kotak's webhook delivery system, 3) Updated firewall rules and network policies to allow webhook traffic, 4) Implemented proper webhook signature validation and authentication mechanisms, 5) Adjusted timeout configurations for webhook delivery and processing, 6) Set up monitoring and alerting for webhook delivery failures, 7) Established clear communication channels between all three teams (IRCTC, Kotak, Juspay) for faster issue resolution, 8) Created comprehensive documentation for webhook integration requirements and troubleshooting steps.",
-    "tags": ["UPI", "Webhooks", "Integration", "IRCTC", "Kotak", "IP-Whitelisting", "Callbacks", "Cross-team", "Network", "Authentication"],
+    "tags": [
+      "UPI",
+      "Webhooks",
+      "Integration",
+      "IRCTC",
+      "Kotak",
+      "IP-Whitelisting",
+      "Callbacks",
+      "Cross-team",
+      "Network",
+      "Authentication"
+    ],
     "created_at": "2024-05-15",
-    "resolved_by": ["Ankit.jha@juspay.in", "mohd.rayyan@juspay.in"]
+    "resolved_by": [
+      "Ankit.jha@juspay.in",
+      "mohd.rayyan@juspay.in"
+    ]
   },
   {
     "id": "JSP-1018",
     "title": "2C2P Refund Failed - Insufficient Funds Error for Order ID 1319313750-1754831413",
     "description": "Refund processing failed on Juspay dashboard for order ID 1319313750-1754831413. The refund request was initiated but failed with error message 'Insufficient funds to perform refund' from 2C2P payment gateway. This indicates that the 2C2P merchant account does not have sufficient balance to process the refund amount. The issue was escalated to multiple team members including @Cindry and @fahmi.suseno for resolution. Customer was waiting for refund processing and the failure was blocking the refund workflow.",
     "resolution": "Identified that 2C2P merchant account had insufficient funds to process the refund. Coordinated with merchant to add funds to their 2C2P account. Once the account was topped up with sufficient balance, the refund was successfully retried and processed. Recommended implementing account balance monitoring and alerts to prevent similar issues in the future. Also suggested setting up automated notifications to merchants when account balance falls below refund processing thresholds.",
-    "tags": ["Refunds", "2C2P", "Insufficient-Funds", "Account-Balance", "Payment-Gateway", "Merchant-Account"],
+    "tags": [
+      "Refunds",
+      "2C2P",
+      "Insufficient-Funds",
+      "Account-Balance",
+      "Payment-Gateway",
+      "Merchant-Account"
+    ],
     "created_at": "2024-09-03",
     "resolved_by": "tanisha@juspay.in"
   },
   {
-  "id": "JSP-1019",
-  "title": "AmazonPay Refund Fails with 'TransientError' When Initiated Too Soon",
-  "description": "BIGBASKET's auto-refund triggers within 1 min of payment success. AmazonPay requires 15+ min gap. Gateway returns 'Transient error, please retry after some time'.",
-  "resolution": "Added GSM rule to catch 'TransientError', mark refund as PENDING, and retry after 2 mins. Later extended to 30 mins. Fixed code to handle 5xx responses with error bodies.",
-  "tags": ["refund", "amazonpay", "gsm", "pt-queue", "transient-error", "config-issue"],
-  "created_at": "2025-07-22",
-  "resolved_by": "sasankh.varma@juspay.in"
-}
+    "id": "JSP-1019",
+    "title": "AmazonPay Refund Fails with 'TransientError' When Initiated Too Soon",
+    "description": "BIGBASKET's auto-refund triggers within 1 min of payment success. AmazonPay requires 15+ min gap. Gateway returns 'Transient error, please retry after some time'.",
+    "resolution": "Added GSM rule to catch 'TransientError', mark refund as PENDING, and retry after 2 mins. Later extended to 30 mins. Fixed code to handle 5xx responses with error bodies.",
+    "tags": [
+      "refund",
+      "amazonpay",
+      "gsm",
+      "pt-queue",
+      "transient-error",
+      "config-issue"
+    ],
+    "created_at": "2025-07-22",
+    "resolved_by": "sasankh.varma@juspay.in"
+  },
+  {
+    "id": "JSP-1020",
+    "title": "Invalid Card Token Error with Stored Card Tokenization",
+    "description": "Heymax merchant is trying to tokenize a card using the /tokenize API by passing the stored_card_token along with the CVV, which they retrieved from the list cards API. However, they are encountering the error: 'Invalid card token.' The stored_card_token is not accepting the card token of the saved card in the request. Error response shows: 'Provide valid stored card token' with error_code 'invalid_card_token'. The merchant mentioned this stored_card_token is working in production but not in sandbox environment. The merchant's flow is: Get the card_token by calling the List Cards API (backend) \u2192 Call tokenize endpoint with the above & CVV (frontend) \u2192 Then call the /txns endpoint with the response from above.",
+    "resolution": "The issue was that merchants should call /txns directly with saved card token and CVV from their backend instead of calling /tokenize again. Another /tokenize call is not required when using already saved cards. The merchant was unnecessarily calling the tokenize endpoint with an already saved card token. For non-PCI compliant merchants, they should not take CVV to their backend. The correct flow should be: Use the stored card token directly with /txns endpoint, not /tokenize. This resolves the 'Invalid card token' error and follows the proper API usage pattern.",
+    "tags": [
+      "cards",
+      "tokenization",
+      "stored-cards",
+      "api-usage",
+      "invalid-token",
+      "merchant-integration",
+      "sandbox",
+      "production",
+      "PCI-compliance"
+    ],
+    "created_at": "2024-09-11",
+    "resolved_by": "sajid.hussain@juspay.in"
+  },
+  {
+    "id": "JSP-1021",
+    "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA \u2014 No PG Response",
+    "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned \u2014 empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.\n\"root_cause\": \"Incorrect or missing 'processing_channel_id' configuration in Checkout dashboard for sandbox environment. PG silently fails without validation error.\",\n  \"fix_applied\": \"Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\",\n  \n\"error_patterns\": [\n    {\n      \"code\": \"EMPTY_RESPONSE\",\n      \"message\": \"{}\"\n    },\n    {\n      \"message\": \"No response from PG and no error message\"\n    }\nend",
+    "resolution": "Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\nEnd",
+    "tags": [
+      "\"card\""
+    ],
+    "created_at": "2025-09-12",
+    "resolved_by": "\"checkout\","
+  },
+  {
+    "id": "JSP-1022",
+    "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA \u2014 No PG Response",
+    "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned \u2014 empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.",
+    "resolution": "\"root_cause\": \"Incorrect or missing 'processing_channel_id' configuration in Checkout dashboard for sandbox environment. PG silently fails without validation error.\",\n  \"fix_applied\": \"Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\",\n  \"error_patterns\": [\n    {\n      \"code\": \"EMPTY_RESPONSE\",\n      \"message\": \"{}\"\n    },\n    {\n      \"message\": \"No response from PG and no error message\"\n    }\n  ],",
+    "tags": [
+      "card",
+      "CHECKOUT",
+      "SANDBOX",
+      "CONFIGURATION",
+      "PROCESSING-CHANNEL"
+    ],
+    "created_at": "2025-09-12",
+    "resolved_by": "sajid.hussain.juspay.in"
+  }
 ]
