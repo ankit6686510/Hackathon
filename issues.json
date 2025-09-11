@@ -282,19 +282,9 @@
     "created_at": "2024-09-11",
     "resolved_by": "sajid.hussain@juspay.in"
   },
+ 
   {
     "id": "JSP-1021",
-    "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA \u2014 No PG Response",
-    "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned \u2014 empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.\n\"root_cause\": \"Incorrect or missing 'processing_channel_id' configuration in Checkout dashboard for sandbox environment. PG silently fails without validation error.\",\n  \"fix_applied\": \"Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\",\n  \n\"error_patterns\": [\n    {\n      \"code\": \"EMPTY_RESPONSE\",\n      \"message\": \"{}\"\n    },\n    {\n      \"message\": \"No response from PG and no error message\"\n    }\nend",
-    "resolution": "Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\nEnd",
-    "tags": [
-      "\"card\""
-    ],
-    "created_at": "2025-09-12",
-    "resolved_by": "\"checkout\","
-  },
-  {
-    "id": "JSP-1022",
     "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA \u2014 No PG Response",
     "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned \u2014 empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.",
     "resolution": "\"root_cause\": \"Incorrect or missing 'processing_channel_id' configuration in Checkout dashboard for sandbox environment. PG silently fails without validation error.\",\n  \"fix_applied\": \"Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\",\n  \"error_patterns\": [\n    {\n      \"code\": \"EMPTY_RESPONSE\",\n      \"message\": \"{}\"\n    },\n    {\n      \"message\": \"No response from PG and no error message\"\n    }\n  ],",

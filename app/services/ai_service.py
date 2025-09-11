@@ -277,49 +277,89 @@ class AIService:
         """
         query_lower = query.lower()
         
-        # Payment domain keywords
+        # Payment domain keywords (enhanced)
         payment_keywords = [
             # Core payment terms
-            'payment', 'transaction', 'upi', 'card', 'wallet', 'gateway',
-            'checkout', 'refund', 'settlement', 'merchant', 'customer',
+            'payment', 'transaction', 'transactions', 'upi', 'card', 'cards', 'wallet', 'gateway',
+            'checkout', 'refund', 'refunds', 'settlement', 'merchant', 'customer', 'pg',
+            
+            # Payment states and actions
+            'failing', 'failed', 'failure', 'processing', 'declined', 'rejected', 'success',
+            'pending', 'completed', 'cancelled', 'expired', 'timeout', 'timeouts',
             
             # Payment methods
-            'credit card', 'debit card', 'net banking', 'emi', 'bnpl',
-            'qr code', 'nfc', 'contactless', 'tap to pay',
+            'credit card', 'debit card', 'net banking', 'emi', 'bnpl', 'visa', 'mastercard',
+            'qr code', 'nfc', 'contactless', 'tap to pay', 'apple pay', 'google pay',
             
             # Banks and payment providers
-            'hdfc', 'icici', 'axis', 'sbi', 'kotak', 'yes bank', 'pnb',
-            'paytm', 'phonepe', 'gpay', 'amazon pay', 'mobikwik',
-            'razorpay', 'stripe', 'paypal', 'cashfree', 'payu',
-            'irctc',  # Indian Railway Catering and Tourism Corporation - major payment merchant
+            'hdfc', 'icici', 'axis', 'sbi', 'kotak', 'yes bank', 'pnb', 'citi', 'hsbc',
+            'paytm', 'phonepe', 'gpay', 'amazon pay', 'mobikwik', 'freecharge',
+            'razorpay', 'stripe', 'paypal', 'cashfree', 'payu', 'ccavenue', '2c2p',
+            'irctc', 'juspay',  # Major payment merchants and processors
+            
+            # E-commerce merchants and companies
+            'firstcry', 'bigbasket', 'flipkart', 'amazon', 'myntra', 'nykaa', 
+            'swiggy', 'zomato', 'ola', 'uber', 'heymax', 'meesho',
+            
+            # Payment environments and testing
+            'sandbox', 'staging', 'test environment', 'dev environment', 'production',
+            'test', 'testing', 'demo', 'mock', 'simulation',
+            
+            # Geographic regions (for international payments)
+            'ae', 'uae', 'ksa', 'saudi', 'emirates', 'dubai', 'riyadh', 'international',
             
             # Payment errors and issues
-            'timeout', 'failed', 'declined', 'error', 'invalid', 'expired',
-            'insufficient funds', 'authentication', 'authorization', '3ds',
-            'otp', 'pin', 'cvv', 'fraud', 'risk', 'chargeback',
+            'error', 'invalid', 'insufficient funds', 'authentication', 'authorization', '3ds',
+            'otp', 'pin', 'cvv', 'fraud', 'risk', 'chargeback', 'dispute',
+            'empty response', 'no response', 'silent failure',
             
             # Technical payment terms
-            'api', 'webhook', 'callback', 'redirect', 'token', 'session',
-            'encryption', 'ssl', 'tls', 'pci', 'compliance', 'mandate',
+            'api', 'webhook', 'webhooks', 'callback', 'callbacks', 'redirect', 'token', 'tokenization',
+            'session', 'encryption', 'ssl', 'tls', 'pci', 'compliance', 'mandate',
             'recurring', 'subscription', 'autopay', 'standing instruction',
-            'ip whitelisting', 'whitelist', 'firewall', 'network', 'integration'
+            'ip whitelisting', 'whitelist', 'firewall', 'network', 'integration',
+            'processing_channel_id', 'channel', 'routing', 'psp', 'acquirer'
         ]
         
         # Bank codes and error codes
         bank_codes = ['5003', '5004', '5005', 'u30', 'u69', 'z6', 'z9']
         
+        # Compound phrases that strongly indicate payment domain
+        payment_phrases = [
+            'card transaction', 'card transactions', 'payment gateway', 'payment processing',
+            'upi payment', 'wallet payment', 'checkout flow', 'payment flow',
+            'transaction failed', 'transaction failing', 'payment failed', 'payment failing',
+            'refund processing', 'settlement processing', 'webhook delivery',
+            'pg response', 'gateway response', 'payment response'
+        ]
+        
         # Check for payment keywords
         payment_score = sum(1 for keyword in payment_keywords if keyword in query_lower)
+        
+        # Check for compound phrases (higher weight)
+        phrase_score = sum(2 for phrase in payment_phrases if phrase in query_lower)
+        
+        # Check for bank codes
         bank_code_found = any(code in query_lower for code in bank_codes)
         
-        # Determine if it's payment related
-        is_payment_related = payment_score > 0 or bank_code_found
+        # Calculate total score
+        total_score = payment_score + phrase_score + (3 if bank_code_found else 0)
+        
+        # Determine if it's payment related (lowered threshold)
+        is_payment_related = total_score > 0
+        
+        # Calculate confidence (improved scoring)
+        confidence = min(total_score * 0.15, 1.0)  # Max confidence of 1.0
         
         return {
             "is_payment_related": is_payment_related,
             "payment_score": payment_score,
+            "phrase_score": phrase_score,
             "bank_code_found": bank_code_found,
-            "confidence": min(payment_score * 0.2, 1.0)  # Max confidence of 1.0
+            "total_score": total_score,
+            "confidence": confidence,
+            "detected_keywords": [kw for kw in payment_keywords if kw in query_lower],
+            "detected_phrases": [phrase for phrase in payment_phrases if phrase in query_lower]
         }
 
     async def generate_payment_ai_solution(self, query: str) -> str:
