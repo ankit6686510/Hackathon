@@ -1,0 +1,105 @@
+{
+  "passed": 5,
+  "failed": 9,
+  "total": 14,
+  "details": [
+    {
+      "test": "Environment Variables",
+      "status": "PASS",
+      "message": "All required Slack tokens are configured",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:23.138999"
+    },
+    {
+      "test": "Backend Connectivity",
+      "status": "FAIL",
+      "message": "Connection error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x118532250>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:31.980925"
+    },
+    {
+      "test": "Slack Bot Process",
+      "status": "PASS",
+      "message": "Bot running (PID: 55594)",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:33.067033"
+    },
+    {
+      "test": "Bot Token Format",
+      "status": "PASS",
+      "message": "Correct xoxb- prefix",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:34.072301"
+    },
+    {
+      "test": "App Token Format",
+      "status": "PASS",
+      "message": "Correct xapp- prefix",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:34.072344"
+    },
+    {
+      "test": "Signing Secret",
+      "status": "PASS",
+      "message": "Signing secret has adequate length",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:34.072365"
+    },
+    {
+      "test": "Query Processing - Payment domain query",
+      "status": "FAIL",
+      "message": "Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x11852b520>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:42.862253"
+    },
+    {
+      "test": "Query Processing - Technical domain query",
+      "status": "FAIL",
+      "message": "Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x118564700>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:50.648290"
+    },
+    {
+      "test": "Query Processing - Greeting query",
+      "status": "FAIL",
+      "message": "Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1185b8130>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:14:58.500795"
+    },
+    {
+      "test": "Query Processing - Non-technical query",
+      "status": "FAIL",
+      "message": "Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1185b8b20>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:15:06.351421"
+    },
+    {
+      "test": "Error Handling - Empty Query",
+      "status": "FAIL",
+      "message": "Exception: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1185c0550>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:15:15.149809"
+    },
+    {
+      "test": "Error Handling - Invalid Top K",
+      "status": "FAIL",
+      "message": "Exception: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1185b8b20>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:15:22.990922"
+    },
+    {
+      "test": "Error Handling - Very Long Query",
+      "status": "FAIL",
+      "message": "Exception: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1185b80a0>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:15:30.778171"
+    },
+    {
+      "test": "Response Formatting",
+      "status": "FAIL",
+      "message": "Error: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /api/v1/search (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x118564b50>: Failed to establish a new connection: [Errno 60] Operation timed out'))",
+      "details": null,
+      "timestamp": "2025-09-12T02:15:39.567298"
+    }
+  ]
+}
