@@ -1,4 +1,4 @@
-# Multi-stage Docker build for FixGenie API
+# Multi-stage Docker build for SherlockAI API
 FROM python:3.11-slim as builder
 
 # Set environment variables
@@ -34,8 +34,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r fixgenie \
-    && useradd -r -g fixgenie fixgenie
+    && groupadd -r SherlockAI \
+    && useradd -r -g SherlockAI SherlockAI
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -47,10 +47,10 @@ WORKDIR /app
 COPY . .
 
 # Change ownership to non-root user
-RUN chown -R fixgenie:fixgenie /app
+RUN chown -R SherlockAI:SherlockAI /app
 
 # Switch to non-root user
-USER fixgenie
+USER SherlockAI
 
 # Expose port
 EXPOSE 8000

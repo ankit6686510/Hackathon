@@ -1,3 +1,3 @@
 """
-API routes package for FixGenie
+API routes package for SherlockAI
 """

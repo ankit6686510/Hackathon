@@ -1,396 +1,323 @@
-# FixGenie — AI-Powered Issue Intelligence System
+# SherlockAI - AI-Powered Issue Intelligence System
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-green.svg)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5.4-blue.svg)](https://typescriptlang.org)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue.svg)](https://www.typescriptlang.org/)
 
-> **Industry-grade AI-powered internal tool that helps Juspay engineers instantly find and reuse fixes from past production issues.**
+> **SherlockAI** is an industry-grade AI-powered issue intelligence system designed for engineering teams. It helps engineers instantly find and reuse fixes from past production issues using semantic search and AI-generated solutions.
 
-## 🎯 Overview
+## 🎯 Project Overview
 
-FixGenie transforms tribal knowledge into AI-augmented institutional memory, reducing Mean Time To Resolve (MTTR) and preventing repeat incidents. When an engineer describes a current problem, the system:
+SherlockAI transforms tribal knowledge into AI-augmented institutional memory, reducing Mean Time To Resolve (MTTR) and preventing repeat incidents. When an engineer describes a current problem, the system:
 
-- 🔍 **Semantic Search**: Finds similar past issues using AI embeddings
-- 🤖 **AI Suggestions**: Generates actionable fix recommendations
-- 📊 **Analytics**: Tracks usage patterns and effectiveness
-- ⚡ **Performance**: Sub-second response times with caching
-- 🔒 **Enterprise-Ready**: Authentication, rate limiting, monitoring
+- 🔍 **Searches** through historical resolved tickets using semantic similarity
+- 📊 **Returns** the 3 most similar past issues with metadata and similarity scores
+- 🤖 **Generates** AI-powered fix suggestions using Google Gemini
+- 💬 **Provides** a ChatGPT-like interface for seamless interaction
+- 📈 **Tracks** analytics and feedback for continuous improvement
 
-## 🏗️ Architecture
+## ✨ Key Features
 
-### Backend (FastAPI + AI)
-- **FastAPI** with async/await for high performance
-- **Google Gemini** for embeddings and text generation
-- **Pinecone** vector database for semantic search
-- **PostgreSQL** for metadata and analytics
-- **Redis** for caching and session management
-- **Structured logging** with request tracing
-- **Prometheus metrics** and health checks
+### 🔧 Core Functionality
+- **Semantic Search Engine**: Vector-based similarity search using Google Gemini embeddings
+- **AI Fix Summarizer**: Context-aware solution generation with Google Gemini 1.5 Flash
+- **Smart Query Classification**: Automatically handles greetings, capability queries, and technical issues
+- **Fallback AI Solutions**: Generates comprehensive troubleshooting guides when no historical matches exist
 
-### Frontend (React + TypeScript)
-- **Modern React** with hooks and TypeScript
-- **Framer Motion** for smooth animations
-- **Professional UI** with dark theme
-- **Real-time feedback** and search suggestions
-- **Responsive design** for mobile and desktop
+### 🎨 User Experience
+- **ChatGPT-like Interface**: Modern, responsive chat UI with dark theme
+- **Multi-line Input**: Shift+Enter support for complex queries
+- **Real-time Typing Indicators**: Visual feedback during AI processing
+- **Share & Export**: Copy conversations to clipboard
+- **Conversation Management**: Delete chat history with confirmation
+- **Responsive Design**: Works seamlessly on desktop and mobile
+
+### 🏗️ Enterprise Features
+- **Analytics Dashboard**: Search patterns, performance metrics, and user feedback
+- **Feedback System**: Rate solutions and provide comments for improvement
+- **Caching Layer**: Redis-based caching for improved performance
+- **Rate Limiting**: Protect against abuse with configurable limits
+- **Structured Logging**: Comprehensive logging with request tracing
+- **Health Monitoring**: Service health checks and metrics
+- **Error Tracking**: Sentry integration for production monitoring
+
+## 🛠️ Technology Stack
+
+### Backend
+- **Framework**: FastAPI (Python 3.9+)
+- **AI/ML**: Google Gemini (text-embedding-004, gemini-1.5-flash)
+- **Vector Database**: Pinecone
+- **Database**: PostgreSQL with SQLAlchemy
+- **Cache**: Redis
+- **Monitoring**: Sentry, Structured Logging
+- **Security**: Rate limiting, CORS, input validation
+
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **Styling**: CSS3 with modern features (backdrop-filter, gradients)
+- **Animations**: Framer Motion
+- **Build Tool**: Vite
+- **State Management**: React Hooks
+
+### Infrastructure
+- **Containerization**: Docker & Docker Compose
+- **Development**: Hot reload, auto-formatting
+- **Production**: Environment-based configuration
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.9+
 - Node.js 18+
-- Docker & Docker Compose (recommended)
-- API keys for Gemini and Pinecone
+- Docker & Docker Compose (optional)
+- Google AI API key
+- Pinecone API key
 
-### Option 1: Docker Compose (Recommended)
-
-1. **Clone and setup environment**:
+### 1. Clone Repository
 ```bash
-git clone <repository>
-cd fixgenie
-cp .env.example .env
-# Edit .env with your API keys
+git clone https://github.com/your-org/SherlockAI.git
+cd SherlockAI
 ```
 
-2. **Start all services**:
-```bash
-docker-compose up -d
-```
-
-3. **Initialize data**:
-```bash
-docker-compose exec api python embedder.py
-```
-
-4. **Access the application**:
-- API: http://localhost:8000
-- Frontend: http://localhost:5173
-- API Docs: http://localhost:8000/docs
-- Health Check: http://localhost:8000/api/v1/health
-
-### Option 2: Local Development
-
-1. **Backend setup**:
+### 2. Backend Setup
 ```bash
 # Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Setup environment
+# Setup environment variables
 cp .env.example .env
-# Edit .env with your configuration
-
-# Initialize database (requires PostgreSQL running)
-python -c "from app.database import init_database; import asyncio; asyncio.run(init_database())"
-
-# Generate embeddings
-python embedder.py
-
-# Start API server
-uvicorn app.main:app --reload
+# Edit .env with your API keys and configuration
 ```
 
-2. **Frontend setup**:
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
+cp .env.example .env
+# Configure frontend environment variables
+```
+
+### 4. Database Setup
+```bash
+# Start PostgreSQL and Redis (using Docker)
+docker-compose up -d postgres redis
+
+# Run database migrations
+python -m alembic upgrade head
+```
+
+### 5. Train the Model
+```bash
+# Load sample data and generate embeddings
+python train_model.py
+```
+
+### 6. Start Services
+```bash
+# Terminal 1: Start backend
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2: Start frontend
+cd frontend
 npm run dev
 ```
 
-## 📊 API Endpoints
+### 7. Access Application
+- **Frontend**: http://localhost:5173
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/api/v1/health
 
-### Core Search API
-```http
-POST /api/v1/search
-Content-Type: application/json
+## 📁 Project Structure
 
-{
-  "query": "UPI payment failed with error 5003",
-  "top_k": 3,
-  "search_type": "semantic",
-  "similarity_threshold": 0.7
-}
 ```
-
-### Health & Monitoring
-- `GET /api/v1/health` - Comprehensive health check
-- `GET /api/v1/health/live` - Liveness probe
-- `GET /api/v1/health/ready` - Readiness probe
-- `GET /api/v1/metrics` - Application metrics
-- `GET /api/v1/metrics/prometheus` - Prometheus format
-
-### Search Features
-- `GET /api/v1/search/suggestions` - Popular search terms
-- `GET /api/v1/search/history` - Recent searches
+SherlockAI/
+├── app/                          # Backend application
+│   ├── api/                      # API endpoints
+│   │   ├── search.py            # Search functionality
+│   │   ├── health.py            # Health checks
+│   │   └── analytics.py         # Analytics & feedback
+│   ├── services/                # Business logic
+│   │   └── ai_service.py        # AI/ML operations
+│   ├── models.py                # Database models
+│   ├── database.py              # Database configuration
+│   ├── config.py                # Application settings
+│   └── main.py                  # FastAPI application
+├── frontend/                     # React frontend
+│   ├── src/
+│   │   ├── App.tsx              # Main application component
+│   │   ├── styles.css           # Global styles
+│   │   └── main.tsx             # Application entry point
+│   ├── package.json             # Dependencies
+│   └── vite.config.ts           # Build configuration
+├── issues.json                  # Sample training data
+├── train_model.py               # Model training script
+├── docker-compose.yml           # Docker services
+├── requirements.txt             # Python dependencies
+└── README.md                    # This file
+```
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GEMINI_API_KEY` | Google Gemini API key | Required |
-| `PINECONE_API_KEY` | Pinecone API key | Required |
-| `PINECONE_INDEX` | Pinecone index name | `juspay-issues` |
-| `DATABASE_URL` | PostgreSQL connection string | Auto-generated |
-| `REDIS_URL` | Redis connection string | Auto-generated |
-| `SECRET_KEY` | JWT secret key | Required |
-| `DEBUG` | Enable debug mode | `false` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `RATE_LIMIT_REQUESTS` | Rate limit per window | `100` |
-| `CACHE_TTL_SEARCH` | Search cache TTL (seconds) | `300` |
+#### Backend (.env)
+```bash
+# Application
+DEBUG=true
+ENVIRONMENT=development
 
-### Advanced Configuration
+# AI Services
+GEMINI_API_KEY=your_gemini_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX=juspay-issues
 
-```python
-# app/config.py
-class Settings(BaseSettings):
-    # Customize search behavior
-    default_top_k: int = 3
-    max_top_k: int = 10
-    similarity_threshold: float = 0.7
-    
-    # Performance tuning
-    cache_ttl_search: int = 300
-    cache_ttl_embeddings: int = 3600
-    
-    # Rate limiting
-    rate_limit_requests: int = 100
-    rate_limit_window: int = 60
+# Database
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/SherlockAI
+REDIS_URL=redis://localhost:6379/0
+
+# Security
+SECRET_KEY=your_secret_key
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# Monitoring (optional)
+SENTRY_DSN=your_sentry_dsn
 ```
 
-## 📈 Monitoring & Analytics
-
-### Built-in Metrics
-- **Search Performance**: Response times, cache hit rates
-- **Usage Analytics**: Popular queries, user patterns
-- **System Health**: Database, Redis, AI service status
-- **Error Tracking**: Structured logging with Sentry integration
-
-### Prometheus Metrics
-```
-fixgenie_searches_total - Total searches performed
-fixgenie_response_time_ms - Average response time
-fixgenie_cache_hits_total - Cache hit count
-fixgenie_ai_requests_total - AI service requests
+#### Frontend (frontend/.env)
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+VITE_APP_NAME=SherlockAI
 ```
 
-### Grafana Dashboard
-Pre-configured dashboards for:
-- API performance and usage
-- Search analytics and trends
-- System resource utilization
-- Error rates and debugging
+## 📊 API Documentation
 
-## 🔒 Security Features
+### Search Endpoints
+- `POST /api/v1/search` - Semantic search for issues
+- `GET /api/v1/search/capabilities` - Get system capabilities
+- `GET /api/v1/search/suggestions` - Get search suggestions
+- `GET /api/v1/search/history` - Get search history
 
-### Production Security
-- **Rate Limiting**: Configurable per-endpoint limits
-- **Input Validation**: Pydantic models with strict validation
-- **CORS Protection**: Configurable allowed origins
-- **Request Tracing**: Unique request IDs for debugging
-- **Error Handling**: Sanitized error responses
-- **Health Checks**: Kubernetes-ready probes
+### Analytics Endpoints
+- `POST /api/v1/analytics/feedback` - Submit feedback
+- `GET /api/v1/analytics/dashboard` - Analytics dashboard
+- `GET /api/v1/analytics/search-patterns` - Search patterns analysis
+- `GET /api/v1/analytics/performance-metrics` - Performance metrics
 
-### Authentication (Extensible)
-```python
-# Future authentication integration
-from app.auth import get_current_user
+### Health & Monitoring
+- `GET /api/v1/health` - Service health check
+- `GET /api/v1/info` - API information
+- `GET /` - Root endpoint with basic info
 
-@router.post("/search")
-async def search_issues(
-    request: SearchRequest,
-    user: User = Depends(get_current_user)
-):
-    # Authenticated search with user context
+## 🎯 Usage Examples
+
+### Basic Search
+```bash
+curl -X POST "http://localhost:8000/api/v1/search" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "UPI payment failed with error 5003",
+    "top_k": 3,
+    "search_type": "semantic"
+  }'
 ```
+
+### Submit Feedback
+```bash
+curl -X POST "http://localhost:8000/api/v1/analytics/feedback" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "API timeout error",
+    "result_id": "JSP-1234",
+    "rating": 5,
+    "helpful": true,
+    "feedback_text": "Very helpful solution!"
+  }'
+```
+
+## 🔍 Sample Queries
+
+Try these example queries in the chat interface:
+
+**Payment Issues:**
+- "UPI payment failed with error 5003"
+- "Payment gateway timeout after 30 seconds"
+- "Webhook retries exhausted"
+
+**API Problems:**
+- "API returning 500 internal server error"
+- "Database connection timeout"
+- "SSL certificate validation failed"
+
+**General Queries:**
+- "What can you help with?"
+- "Show me your capabilities"
+- "Hello" (for greeting response)
+
+## 📈 Analytics & Monitoring
+
+### Performance Metrics
+- Search execution times (P50, P90, P95, P99)
+- Success/failure rates
+- Popular search terms
+- User feedback scores
+
+### Dashboard Features
+- Real-time search analytics
+- Performance trends
+- Feedback summary
+- Error rate monitoring
 
 ## 🧪 Testing
 
-### Run Tests
+### Backend Tests
 ```bash
-# Backend tests
-pytest tests/ -v --cov=app
+# Run API tests
+python -m pytest tests/
 
-# Frontend tests
+# Test specific endpoints
+python debug_api_search.py
+python test_api_issue.py
+```
+
+### Frontend Testing
+```bash
 cd frontend
 npm test
-
-# Integration tests
-docker-compose -f docker-compose.test.yml up --abort-on-container-exit
 ```
 
-### Load Testing
+## 🚀 Deployment
+
+### Docker Deployment
 ```bash
-# Install k6
-brew install k6  # macOS
-# or download from https://k6.io
+# Build and start all services
+docker-compose up --build
 
-# Run load tests
-k6 run tests/load/search_test.js
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📦 Deployment
+### Manual Deployment
+1. Set production environment variables
+2. Build frontend: `npm run build`
+3. Start backend with production WSGI server
+4. Configure reverse proxy (nginx)
+5. Set up SSL certificates
+6. Configure monitoring and logging
 
-### Docker Production Build
-```bash
-# Build optimized image
-docker build -t fixgenie:latest .
+## 🔒 Security Considerations
 
-# Run with production settings
-docker run -d \
-  --name fixgenie-api \
-  -p 8000:8000 \
-  -e ENVIRONMENT=production \
-  -e DEBUG=false \
-  fixgenie:latest
-```
-
-### Kubernetes Deployment
-```yaml
-# k8s/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: fixgenie-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: fixgenie-api
-  template:
-    metadata:
-      labels:
-        app: fixgenie-api
-    spec:
-      containers:
-      - name: api
-        image: fixgenie:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: ENVIRONMENT
-          value: "production"
-        livenessProbe:
-          httpGet:
-            path: /api/v1/health/live
-            port: 8000
-        readinessProbe:
-          httpGet:
-            path: /api/v1/health/ready
-            port: 8000
-```
-
-## 🔄 Data Management
-
-### Issue Data Format
-```json
-{
-  "id": "JSP-1234",
-  "title": "UPI Payment Failed with Error 5003",
-  "description": "User reported UPI payment stuck in processing state...",
-  "resolution": "Increased timeout from 10s to 30s for Axis Bank API...",
-  "tags": ["UPI", "Timeout", "AxisBank", "PaymentFlow"],
-  "created_at": "2024-03-12T10:30:00Z",
-  "resolved_by": "john.doe@juspay.in",
-  "status": "resolved",
-  "priority": "high"
-}
-```
-
-### Data Pipeline
-```bash
-# 1. Export from Jira/Zendesk
-python scripts/export_jira.py --project JSP --status resolved
-
-# 2. Anonymize sensitive data
-python scripts/anonymize.py --input raw_issues.json --output issues.json
-
-# 3. Generate embeddings
-python embedder.py
-
-# 4. Verify data quality
-python scripts/validate_data.py
-```
-
-## 🛠️ Development
-
-### Code Structure
-```
-├── app/                    # Main application
-│   ├── api/               # API routes
-│   ├── services/          # Business logic
-│   ├── models.py          # Data models
-│   ├── config.py          # Configuration
-│   └── main.py            # FastAPI app
-├── frontend/              # React frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   └── styles.css     # Styling
-│   └── package.json
-├── tests/                 # Test suites
-├── scripts/               # Utility scripts
-├── monitoring/            # Grafana/Prometheus config
-└── docker-compose.yml     # Development environment
-```
-
-### Adding New Features
-
-1. **New API Endpoint**:
-```python
-# app/api/new_feature.py
-from fastapi import APIRouter
-
-router = APIRouter(prefix="/api/v1", tags=["feature"])
-
-@router.post("/new-endpoint")
-async def new_feature():
-    return {"status": "success"}
-```
-
-2. **New Service**:
-```python
-# app/services/new_service.py
-class NewService:
-    async def process(self, data):
-        # Business logic here
-        return result
-```
-
-3. **Database Migration**:
-```python
-# Use Alembic for database migrations
-alembic revision --autogenerate -m "Add new table"
-alembic upgrade head
-```
-
-## 📋 Roadmap
-
-### Phase 1: Core Features ✅
-- [x] Semantic search with AI embeddings
-- [x] AI-powered fix suggestions
-- [x] Professional React frontend
-- [x] Caching and performance optimization
-- [x] Health checks and monitoring
-
-### Phase 2: Enterprise Features 🚧
-- [ ] User authentication and authorization
-- [ ] Advanced analytics dashboard
-- [ ] Slack/Teams integration
-- [ ] Feedback learning system
-- [ ] Multi-tenant support
-
-### Phase 3: Advanced AI 🔮
-- [ ] Knowledge graph construction
-- [ ] Automated issue categorization
-- [ ] Predictive incident detection
-- [ ] Custom model fine-tuning
-- [ ] Multi-modal search (code, logs, images)
+- **API Keys**: Store securely in environment variables
+- **Rate Limiting**: Configured to prevent abuse
+- **Input Validation**: All inputs validated and sanitized
+- **CORS**: Properly configured for production
+- **Error Handling**: No sensitive information in error responses
+- **Logging**: Structured logging without sensitive data
 
 ## 🤝 Contributing
 
@@ -403,24 +330,30 @@ alembic upgrade head
 ### Development Guidelines
 - Follow PEP 8 for Python code
 - Use TypeScript for frontend development
-- Write tests for new features
+- Add tests for new features
 - Update documentation
-- Ensure Docker builds pass
+- Ensure all tests pass
 
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **Juspay Engineering Team** for domain expertise
-- **Google Gemini** for powerful AI capabilities
-- **Pinecone** for vector database infrastructure
+- **Google AI** for Gemini API
+- **Pinecone** for vector database
 - **FastAPI** for the excellent web framework
-- **React** and **TypeScript** communities
+- **React** and **Framer Motion** for the frontend
+- **Juspay** for the inspiration and use case
+
+## 📞 Support
+
+For support and questions:
+- 📧 Email: support@SherlockAI.dev
+- 💬 Slack: #SherlockAI-support
+- 📖 Documentation: [docs.SherlockAI.dev](https://docs.SherlockAI.dev)
+- 🐛 Issues: [GitHub Issues](https://github.com/your-org/SherlockAI/issues)
 
 ---
 
-**Built with ❤️ for Juspay Engineers**
-
-For questions or support, please open an issue or contact the development team.
+**Built with ❤️ for engineering teams who want to learn from the past and solve problems faster.**

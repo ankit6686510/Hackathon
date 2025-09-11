@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # FixGenie API
+  # SherlockAI API
   api:
     build: .
     ports:
@@ -10,7 +10,7 @@ services:
       - DEBUG=true
       - ENVIRONMENT=development
       - SECRET_KEY=dev-secret-key-change-in-production
-      - DATABASE_URL=postgresql+asyncpg://fixgenie:password@postgres:5432/fixgenie
+      - DATABASE_URL=postgresql+asyncpg://SherlockAI:password@postgres:5432/SherlockAI
       - REDIS_URL=redis://redis:6379/0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PINECONE_API_KEY=${PINECONE_API_KEY}
@@ -25,28 +25,28 @@ services:
       - .:/app
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
 
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=fixgenie
+      - POSTGRES_USER=SherlockAI
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=fixgenie
+      - POSTGRES_DB=SherlockAI
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fixgenie -d fixgenie"]
+      test: ["CMD-SHELL", "pg_isready -U SherlockAI -d SherlockAI"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
 
   # Redis Cache
   redis:
@@ -62,7 +62,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
 
   # Frontend (optional for development)
   frontend:
@@ -78,7 +78,7 @@ services:
       - api
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
 
   # Monitoring with Prometheus (optional)
   prometheus:
@@ -96,7 +96,7 @@ services:
       - '--web.enable-lifecycle'
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
     profiles:
       - monitoring
 
@@ -115,7 +115,7 @@ services:
       - prometheus
     restart: unless-stopped
     networks:
-      - fixgenie-network
+      - SherlockAI-network
     profiles:
       - monitoring
 
@@ -126,5 +126,5 @@ volumes:
   grafana_data:
 
 networks:
-  fixgenie-network:
+  SherlockAI-network:
     driver: bridge

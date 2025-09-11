@@ -212,25 +212,25 @@ async def prometheus_metrics(db: AsyncSession = Depends(get_database)):
         memory = psutil.virtual_memory()
         
         # Format as Prometheus metrics
-        metrics_text = f"""# HELP fixgenie_searches_total Total number of searches performed
-# TYPE fixgenie_searches_total counter
-fixgenie_searches_total {total_searches}
+        metrics_text = f"""# HELP SherlockAI_searches_total Total number of searches performed
+# TYPE SherlockAI_searches_total counter
+SherlockAI_searches_total {total_searches}
 
-# HELP fixgenie_issues_total Total number of issues in database
-# TYPE fixgenie_issues_total gauge
-fixgenie_issues_total {total_issues}
+# HELP SherlockAI_issues_total Total number of issues in database
+# TYPE SherlockAI_issues_total gauge
+SherlockAI_issues_total {total_issues}
 
-# HELP fixgenie_response_time_ms Average response time in milliseconds
-# TYPE fixgenie_response_time_ms gauge
-fixgenie_response_time_ms {avg_response_time}
+# HELP SherlockAI_response_time_ms Average response time in milliseconds
+# TYPE SherlockAI_response_time_ms gauge
+SherlockAI_response_time_ms {avg_response_time}
 
-# HELP fixgenie_cpu_percent CPU usage percentage
-# TYPE fixgenie_cpu_percent gauge
-fixgenie_cpu_percent {cpu_percent}
+# HELP SherlockAI_cpu_percent CPU usage percentage
+# TYPE SherlockAI_cpu_percent gauge
+SherlockAI_cpu_percent {cpu_percent}
 
-# HELP fixgenie_memory_percent Memory usage percentage
-# TYPE fixgenie_memory_percent gauge
-fixgenie_memory_percent {memory.percent}
+# HELP SherlockAI_memory_percent Memory usage percentage
+# TYPE SherlockAI_memory_percent gauge
+SherlockAI_memory_percent {memory.percent}
 """
         
         return metrics_text

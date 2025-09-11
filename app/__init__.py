@@ -1,5 +1,5 @@
 """
-FixGenie - AI-Powered Issue Intelligence System
+SherlockAI - AI-Powered Issue Intelligence System
 Industry-grade backend implementation
 """
 

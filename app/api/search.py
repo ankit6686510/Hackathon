@@ -77,10 +77,11 @@ async def search_issues(
     db: AsyncSession = Depends(get_database)
 ):
     """
-    Search for similar issues using AI-powered semantic search
+    Search for payment-related issues using AI-powered semantic search
     
-    This endpoint performs semantic search across historical issues to find
+    This endpoint performs semantic search across historical payment issues to find
     the most relevant solutions and generates AI-powered fix suggestions.
+    PAYMENT DOMAIN ONLY - Non-payment queries will be rejected.
     """
     start_time = time.time()
     
@@ -95,94 +96,82 @@ async def search_issues(
                 detail=f"top_k cannot exceed {settings.max_top_k}"
             )
         
-        # Check cache first
-        cache_key = generate_search_cache_key(search_request)
-        try:
-            redis_client = await get_redis()
-            cached_result = await redis_client.get(cache_key)
-            if cached_result:
-                logger.info("Retrieved search results from cache", cache_key=cache_key)
-                cached_data = json.loads(cached_result)
-                
-                # Update execution time for cache hit
-                cached_data["execution_time_ms"] = (time.time() - start_time) * 1000
-                cached_data["timestamp"] = datetime.utcnow().isoformat()
-                
-                # Log cache hit
-                background_tasks.add_task(
-                    log_search_request,
-                    db,
-                    request,
-                    search_request,
-                    cached_data["results"],
-                    cached_data["execution_time_ms"]
-                )
-                
-                return SearchResponse(**cached_data)
-        except Exception as e:
-            logger.warning("Cache retrieval failed", error=str(e))
+        # Use the new payment-focused smart response system
+        logger.info("Processing payment domain query", query=search_request.query)
+        smart_response = await ai_service.generate_payment_smart_response(search_request.query)
         
-        # Generate query embedding
-        logger.info("Generating embedding for search query", query=search_request.query)
-        query_embedding = await ai_service.embed_text(search_request.query)
-        
-        # Prepare filters for vector search
-        vector_filters = {}
-        if search_request.include_resolved_only:
-            vector_filters["status"] = {"$eq": "resolved"}
-        
-        # Add custom filters
-        if search_request.filters:
-            vector_filters.update(search_request.filters)
-        
-        # Search similar issues
-        logger.info("Searching for similar issues", top_k=search_request.top_k)
-        similar_issues = await ai_service.search_similar(
-            query_embedding=query_embedding,
-            top_k=search_request.top_k,
-            similarity_threshold=search_request.similarity_threshold,
-            filters=vector_filters if vector_filters else None
-        )
-        
-        # Generate AI suggestions for each result
         results = []
-        for issue in similar_issues:
-            try:
-                # Generate fix suggestion using the issue data directly
-                issue_metadata = {
-                    "id": issue["id"],
-                    "title": issue["title"],
-                    "description": issue["description"],
-                    "resolution": issue["resolution"],
-                    "tags": issue["tags"]
-                }
-                
-                ai_suggestion = await ai_service.generate_fix_suggestion(
-                    issue_metadata=issue_metadata,
-                    query=search_request.query
-                )
-                
-                # Create search result
-                result = SearchResult(
-                    id=issue["id"],
-                    title=issue["title"],
-                    description=issue["description"],
-                    resolution=issue["resolution"],
-                    ai_suggestion=ai_suggestion,
-                    score=issue["score"],
-                    tags=issue["tags"],
-                    created_at=datetime.fromisoformat(issue["created_at"]) if issue["created_at"] else datetime(2024, 1, 1),
-                    resolved_by=issue["resolved_by"]
-                )
-                results.append(result)
-                
-            except Exception as e:
-                logger.error(
-                    "Failed to process search result",
-                    issue_id=issue.get("id", "unknown"),
-                    error=str(e)
-                )
-                continue
+        
+        if smart_response["type"] == "domain_rejection":
+            # Non-payment query - return rejection message
+            result = SearchResult(
+                id="domain-rejection",
+                title="Payment Domain Only",
+                description="This system specializes in payment-related issues only.",
+                resolution=smart_response["content"],
+                ai_suggestion="Please ask about UPI transactions, payment gateways, card processing, bank integrations, payment errors, or other payment-related topics.",
+                score=1.0,
+                tags=["Domain-Restriction", "Payment-Only"],
+                created_at=datetime.utcnow(),
+                resolved_by="SherlockAI Domain Filter"
+            )
+            results.append(result)
+            
+        elif smart_response["type"] == "historical_payment_issues":
+            # Found historical payment issues
+            for issue in smart_response["content"]:
+                try:
+                    result = SearchResult(
+                        id=issue["id"],
+                        title=issue["title"],
+                        description=issue["description"],
+                        resolution=issue["resolution"],
+                        ai_suggestion=issue["ai_suggestion"],
+                        score=issue["score"],
+                        tags=issue["tags"],
+                        created_at=datetime.fromisoformat(issue["created_at"]) if issue["created_at"] else datetime(2024, 1, 1),
+                        resolved_by=issue["resolved_by"]
+                    )
+                    results.append(result)
+                except Exception as e:
+                    logger.error(
+                        "Failed to process historical payment issue",
+                        issue_id=issue.get("id", "unknown"),
+                        error=str(e)
+                    )
+                    continue
+                    
+        elif smart_response["type"] in ["ai_payment_solution", "ai_payment_solution_fallback"]:
+            # AI-generated payment solution with learning
+            pending_id = smart_response.get("pending_issue_id", "unknown")
+            
+            result = SearchResult(
+                id=f"ai-payment-{pending_id}",
+                title="AI-Generated Payment Solution",
+                description=f"Payment issue: {search_request.query}",
+                resolution=smart_response["content"],
+                ai_suggestion=f"⚠️ This is an AI-generated solution (ID: {pending_id}). Please verify with your team and update the system with the actual resolution for future learning.",
+                score=1.0,
+                tags=["AI-Generated", "Payment-Domain", "Learning-System"],
+                created_at=datetime.utcnow(),
+                resolved_by="SherlockAI Payment Expert"
+            )
+            results.append(result)
+            
+        else:
+            # Error case
+            result = SearchResult(
+                id="payment-error",
+                title="Payment System Error",
+                description=f"Error processing payment query: {search_request.query}",
+                resolution=smart_response.get("content", "Unable to process payment query due to technical issues."),
+                ai_suggestion="Please try again later or contact your payment engineering team for assistance.",
+                score=1.0,
+                tags=["Payment-Error", "System-Error"],
+                created_at=datetime.utcnow(),
+                resolved_by="SherlockAI Error Handler"
+            )
+            results.append(result)
         
         execution_time_ms = (time.time() - start_time) * 1000
         
@@ -198,25 +187,6 @@ async def search_issues(
         
         response = SearchResponse(**response_data)
         
-        # Cache the results
-        try:
-            redis_client = await get_redis()
-            cache_data = response.dict()
-            cache_data["timestamp"] = cache_data["timestamp"].isoformat()
-            cache_data["results"] = [
-                {**result.dict(), "created_at": result.created_at.isoformat()}
-                for result in results
-            ]
-            
-            await redis_client.setex(
-                cache_key,
-                settings.cache_ttl_search,
-                json.dumps(cache_data, default=str)
-            )
-            logger.debug("Cached search results", cache_key=cache_key)
-        except Exception as e:
-            logger.warning("Failed to cache search results", error=str(e))
-        
         # Log search request in background
         background_tasks.add_task(
             log_search_request,
@@ -228,10 +198,12 @@ async def search_issues(
         )
         
         logger.info(
-            "Search completed successfully",
+            "Payment search completed",
             query=search_request.query,
+            response_type=smart_response["type"],
             results_count=len(results),
-            execution_time_ms=execution_time_ms
+            execution_time_ms=execution_time_ms,
+            domain_validation=smart_response.get("domain_validation", {})
         )
         
         return response
@@ -241,14 +213,91 @@ async def search_issues(
     except Exception as e:
         execution_time_ms = (time.time() - start_time) * 1000
         logger.error(
-            "Search request failed",
+            "Payment search request failed",
             query=search_request.query,
             error=str(e),
             execution_time_ms=execution_time_ms
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Search failed: {str(e)}"
+            detail=f"Payment search failed: {str(e)}"
+        )
+
+
+@router.get("/search/capabilities")
+async def get_capabilities():
+    """
+    Get information about SherlockAI's capabilities
+    """
+    try:
+        capabilities = {
+            "title": "🔧 SherlockAI Capabilities",
+            "description": "I can help you solve various technical issues based on historical data and AI-powered solutions.",
+            "categories": [
+                {
+                    "name": "Payment Systems",
+                    "issues": [
+                        "UPI payment failures and timeouts",
+                        "Payment gateway integration issues",
+                        "Transaction processing errors",
+                        "Refund and settlement problems",
+                        "PSP routing and failover issues"
+                    ]
+                },
+                {
+                    "name": "API & Integration",
+                    "issues": [
+                        "API timeout and connection errors",
+                        "Webhook delivery failures",
+                        "Authentication and authorization issues",
+                        "Rate limiting problems",
+                        "SSL/TLS certificate issues"
+                    ]
+                },
+                {
+                    "name": "Database & Performance",
+                    "issues": [
+                        "Database connection timeouts",
+                        "Query performance optimization",
+                        "Connection pool exhaustion",
+                        "Deadlock resolution",
+                        "Index and schema issues"
+                    ]
+                },
+                {
+                    "name": "Infrastructure & Deployment",
+                    "issues": [
+                        "Service deployment failures",
+                        "Configuration management",
+                        "Load balancing issues",
+                        "Monitoring and alerting",
+                        "Resource scaling problems"
+                    ]
+                }
+            ],
+            "features": [
+                "🔍 Semantic search through historical incidents",
+                "🤖 AI-powered solution generation",
+                "📊 Similarity scoring and ranking",
+                "⚡ Fast response times",
+                "🏷️ Intelligent tagging and categorization"
+            ],
+            "example_queries": [
+                "UPI payment failed with error 5003",
+                "Database connection timeout",
+                "API returning 500 error",
+                "Webhook not receiving callbacks",
+                "SSL certificate expired"
+            ]
+        }
+        
+        return capabilities
+        
+    except Exception as e:
+        logger.error("Failed to get capabilities", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve capabilities"
         )
 
 

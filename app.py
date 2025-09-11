@@ -2,10 +2,10 @@ import os
 import streamlit as st
 import requests
 
-API_URL = os.getenv("FIXGENIE_API_URL", "http://localhost:8000/search")
+API_URL = os.getenv("SherlockAI_API_URL", "http://localhost:8000/search")
 
-st.set_page_config(page_title="FixGenie", page_icon="🔍", layout="centered")
-st.title("🔍 FixGenie — Juspay’s AI Incident Assistant")
+st.set_page_config(page_title="SherlockAI", page_icon="🔍", layout="centered")
+st.title("🔍 SherlockAI — Juspay’s AI Incident Assistant")
 
 query = st.text_input("Describe the issue:", placeholder="e.g., UPI payment failed with error 5003")
 top_k = st.slider("Results", 1, 5, 3)

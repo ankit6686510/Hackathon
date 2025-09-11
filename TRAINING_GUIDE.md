@@ -1,8 +1,8 @@
-# 🎓 FixGenie Training Guide
+# 🎓 SherlockAI Training Guide
 
-## How to Train Your FixGenie Model
+## How to Train Your SherlockAI Model
 
-Your FixGenie AI assistant learns from historical issues to provide intelligent suggestions. Here's how to train and expand its knowledge base.
+SherlockAI AI assistant learns from historical issues to provide intelligent suggestions. Here's how to train and expand its knowledge base.
 
 ## 🚀 Quick Start
 
@@ -52,10 +52,10 @@ Create a Python script to add individual issues:
 
 ```python
 import asyncio
-from train_model import FixGenieTrainer
+from train_model import SherlockAITrainer
 
 async def add_new_issue():
-    trainer = FixGenieTrainer()
+    trainer = SherlockAITrainer()
     
     success = await trainer.add_single_issue(
         title="New Issue Title",
@@ -156,10 +156,10 @@ For large datasets, use the batch training functionality:
 
 ```python
 import asyncio
-from train_model import FixGenieTrainer
+from train_model import SherlockAITrainer
 
 async def batch_train():
-    trainer = FixGenieTrainer()
+    trainer = SherlockAITrainer()
     
     # Train from custom JSON file
     stats = await trainer.train_from_json("custom_issues.json")
@@ -173,10 +173,10 @@ Check training quality:
 
 ```python
 import asyncio
-from train_model import FixGenieTrainer
+from train_model import SherlockAITrainer
 
 async def validate_training():
-    trainer = FixGenieTrainer()
+    trainer = SherlockAITrainer()
     
     # Test search quality
     results = await trainer.test_search("payment timeout", top_k=5)
@@ -232,4 +232,4 @@ asyncio.run(validate_training())
 3. **Iterate**: Add more issues based on what engineers actually search for
 4. **Monitor**: Track which searches return good results vs. poor results
 
-Your FixGenie is now trained and ready to help your engineering team find solutions faster! 🚀
+Your SherlockAI is now trained and ready to help your engineering team find solutions faster! 🚀

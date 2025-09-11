@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FixGenie Model Training Script
+SherlockAI Model Training Script
 This script loads issues into the vector database and provides utilities for training the model.
 """
 
@@ -20,8 +20,8 @@ from app.models import Issue, IssueCreate
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-class FixGenieTrainer:
-    """Training utilities for FixGenie"""
+class SherlockAITrainer:
+    """Training utilities for SherlockAI"""
     
     def __init__(self):
         self.ai_service = ai_service
@@ -203,9 +203,9 @@ class FixGenieTrainer:
 
 async def main():
     """Main training function"""
-    trainer = FixGenieTrainer()
+    trainer = SherlockAITrainer()
     
-    print("🔧 FixGenie Model Trainer")
+    print("🔧 SherlockAI Model Trainer")
     print("=" * 50)
     
     # Check current vector DB stats
@@ -225,7 +225,7 @@ async def main():
     await trainer.test_search("timeout error")
     await trainer.test_search("webhook issues")
     
-    print("\n✅ Training completed! Your FixGenie model is now ready to use.")
+    print("\n✅ Training completed! Your SherlockAI model is now ready to use.")
     print("\n💡 To add new issues, you can:")
     print("   1. Add them to issues.json and run this script again")
     print("   2. Use the add_single_issue() function")

@@ -12,7 +12,7 @@ from pinecone import Pinecone
 load_dotenv()
 
 async def debug_search():
-    print("🔍 FixGenie Search Debug")
+    print("🔍 SherlockAI Search Debug")
     print("=" * 50)
     
     # Initialize services

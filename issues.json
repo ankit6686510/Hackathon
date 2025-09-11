@@ -142,5 +142,14 @@
     "tags": ["Callbacks", "Resilience", "Traffic"],
     "created_at": "2024-05-13",
     "resolved_by": "paul@juspay.in"
+  },
+  {
+    "id": "JSP-1017",
+    "title": "IRCTC-Kotak UPI Integration Webhook Consumption Failure",
+    "description": "Complex multi-layered issue with IRCTC-Kotak UPI integration where webhooks were not being consumed properly. Problems included: 1) Webhook endpoint not receiving callbacks from Kotak, 2) IP whitelisting issues between IRCTC and Kotak systems, 3) Callback URL configuration mismatches, 4) Cross-team coordination challenges between IRCTC, Kotak, and Juspay teams, 5) Network connectivity and firewall rules blocking webhook delivery, 6) Authentication and authorization issues in webhook validation, 7) Timeout configurations causing webhook delivery failures. The issue required extensive debugging across multiple systems and stakeholder coordination.",
+    "resolution": "Multi-step resolution involving: 1) Coordinated with Kotak team to verify and update IP whitelist for IRCTC webhook endpoints, 2) Reconfigured callback URLs to match exact format expected by Kotak's webhook delivery system, 3) Updated firewall rules and network policies to allow webhook traffic, 4) Implemented proper webhook signature validation and authentication mechanisms, 5) Adjusted timeout configurations for webhook delivery and processing, 6) Set up monitoring and alerting for webhook delivery failures, 7) Established clear communication channels between all three teams (IRCTC, Kotak, Juspay) for faster issue resolution, 8) Created comprehensive documentation for webhook integration requirements and troubleshooting steps.",
+    "tags": ["UPI", "Webhooks", "Integration", "IRCTC", "Kotak", "IP-Whitelisting", "Callbacks", "Cross-team", "Network", "Authentication"],
+    "created_at": "2024-05-15",
+    "resolved_by": ["Ankit.jha@juspay.in", "mohd.rayyan@juspay.in"]
   }
 ]

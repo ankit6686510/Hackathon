@@ -1,5 +1,5 @@
 """
-Database models for FixGenie API
+Database models for SherlockAI API
 """
 
 from datetime import datetime
@@ -111,6 +111,43 @@ class Feedback(Base):
     # Relationships
     user = relationship("User", back_populates="feedback")
     issue = relationship("Issue", back_populates="feedback")
+
+
+class FeedbackLog(Base):
+    """Feedback log model for analytics"""
+    __tablename__ = "feedback_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    query = Column(Text, nullable=False)
+    result_id = Column(String, nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5 scale
+    feedback_text = Column(Text, nullable=True)
+    helpful = Column(Boolean, nullable=False)
+    timestamp = Column(DateTime, default=func.now())
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+
+
+class PendingIssue(Base):
+    """Pending issue model for learning system"""
+    __tablename__ = "pending_issues"
+    
+    id = Column(String, primary_key=True, index=True)
+    query = Column(Text, nullable=False)
+    ai_solution = Column(Text, nullable=False)
+    payment_score = Column(Integer, default=0)
+    confidence_level = Column(Float, default=0.0)
+    status = Column(String, default="pending_verification")  # pending_verification, verified, rejected
+    created_at = Column(DateTime, default=func.now())
+    verified_at = Column(DateTime, nullable=True)
+    verified_by = Column(String, nullable=True)
+    actual_resolution = Column(Text, nullable=True)
+    effectiveness_score = Column(Float, nullable=True)  # How effective was the AI solution
+    
+    # Payment domain metadata
+    payment_type = Column(String, nullable=True)  # UPI, card, wallet, etc.
+    bank_involved = Column(String, nullable=True)
+    error_code = Column(String, nullable=True)
 
 
 class APIKey(Base):

@@ -25,6 +25,8 @@ from app.config import settings
 from app.database import init_database, close_database
 from app.api.search import router as search_router
 from app.api.health import router as health_router
+from app.api.analytics import router as analytics_router
+from app.api.auth import router as auth_router
 
 # Configure structured logging
 structlog.configure(
@@ -67,7 +69,7 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
-    logger.info("Starting FixGenie API", version=settings.app_version)
+    logger.info("Starting SherlockAI API", version=settings.app_version)
     
     try:
         # Initialize database
@@ -76,7 +78,7 @@ async def lifespan(app: FastAPI):
         
         # Log startup completion
         logger.info(
-            "FixGenie API started successfully",
+            "SherlockAI API started successfully",
             environment=settings.environment,
             debug=settings.debug
         )
@@ -88,7 +90,7 @@ async def lifespan(app: FastAPI):
         raise
     finally:
         # Shutdown
-        logger.info("Shutting down FixGenie API")
+        logger.info("Shutting down SherlockAI API")
         await close_database()
         logger.info("Application shutdown complete")
 
@@ -119,11 +121,12 @@ if not settings.debug:
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"] if settings.debug else settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID", "X-Response-Time"]
+    expose_headers=["X-Request-ID", "X-Response-Time"],
+    max_age=600
 )
 
 
@@ -299,6 +302,8 @@ async def api_info(request: Request):
 # Include routers
 app.include_router(search_router)
 app.include_router(health_router)
+app.include_router(analytics_router)
+app.include_router(auth_router)
 
 # Add rate limiting to search endpoints
 @app.middleware("http")

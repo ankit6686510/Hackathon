@@ -1,5 +1,5 @@
 """
-Configuration management for FixGenie API
+Configuration management for SherlockAI API
 """
 
 import os
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     """Application settings with environment variable support"""
     
     # Application
-    app_name: str = "FixGenie API"
+    app_name: str = "SherlockAI API"
     app_version: str = "1.0.0"
     debug: bool = Field(default=False, env="DEBUG")
     environment: str = Field(default="development", env="ENVIRONMENT")
@@ -46,11 +46,11 @@ class Settings(BaseSettings):
     
     # Database
     database_url: Optional[str] = Field(default=None, env="DATABASE_URL")
-    postgres_user: str = Field(default="fixgenie", env="POSTGRES_USER")
+    postgres_user: str = Field(default="SherlockAI", env="POSTGRES_USER")
     postgres_password: str = Field(default="password", env="POSTGRES_PASSWORD")
     postgres_host: str = Field(default="localhost", env="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, env="POSTGRES_PORT")
-    postgres_db: str = Field(default="fixgenie", env="POSTGRES_DB")
+    postgres_db: str = Field(default="SherlockAI", env="POSTGRES_DB")
     
     # Redis Cache
     redis_url: Optional[str] = Field(default=None, env="REDIS_URL")
