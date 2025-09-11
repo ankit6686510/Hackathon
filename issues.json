@@ -151,5 +151,14 @@
     "tags": ["UPI", "Webhooks", "Integration", "IRCTC", "Kotak", "IP-Whitelisting", "Callbacks", "Cross-team", "Network", "Authentication"],
     "created_at": "2024-05-15",
     "resolved_by": ["Ankit.jha@juspay.in", "mohd.rayyan@juspay.in"]
+  },
+  {
+    "id": "JSP-1018",
+    "title": "2C2P Refund Failed - Insufficient Funds Error for Order ID 1319313750-1754831413",
+    "description": "Refund processing failed on Juspay dashboard for order ID 1319313750-1754831413. The refund request was initiated but failed with error message 'Insufficient funds to perform refund' from 2C2P payment gateway. This indicates that the 2C2P merchant account does not have sufficient balance to process the refund amount. The issue was escalated to multiple team members including @Cindry and @fahmi.suseno for resolution. Customer was waiting for refund processing and the failure was blocking the refund workflow.",
+    "resolution": "Identified that 2C2P merchant account had insufficient funds to process the refund. Coordinated with merchant to add funds to their 2C2P account. Once the account was topped up with sufficient balance, the refund was successfully retried and processed. Recommended implementing account balance monitoring and alerts to prevent similar issues in the future. Also suggested setting up automated notifications to merchants when account balance falls below refund processing thresholds.",
+    "tags": ["Refunds", "2C2P", "Insufficient-Funds", "Account-Balance", "Payment-Gateway", "Merchant-Account"],
+    "created_at": "2024-09-03",
+    "resolved_by": "tanisha@juspay.in"
   }
 ]

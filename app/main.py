@@ -27,6 +27,11 @@ from app.api.search import router as search_router
 from app.api.health import router as health_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.monitoring import (
+    setup_metrics, metrics_middleware, metrics_endpoint,
+    enhanced_logging_middleware, log_system_startup, log_system_shutdown,
+    health_monitor, AlertManager, create_default_alert_rules
+)
 
 # Configure structured logging
 structlog.configure(
@@ -76,6 +81,21 @@ async def lifespan(app: FastAPI):
         await init_database()
         logger.info("Database initialized successfully")
         
+        # Initialize monitoring
+        setup_metrics(settings.app_name, settings.app_version, settings.environment)
+        
+        # Start health monitoring
+        await health_monitor.start()
+        
+        # Initialize alert manager
+        alert_manager = AlertManager()
+        for rule in create_default_alert_rules():
+            alert_manager.add_rule(rule)
+        app.state.alert_manager = alert_manager
+        
+        # Log system startup
+        await log_system_startup(settings.app_name, settings.app_version, settings.environment)
+        
         # Log startup completion
         logger.info(
             "SherlockAI API started successfully",
@@ -91,6 +111,13 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("Shutting down SherlockAI API")
+        
+        # Stop health monitoring
+        await health_monitor.stop()
+        
+        # Log system shutdown
+        await log_system_shutdown()
+        
         await close_database()
         logger.info("Application shutdown complete")
 
@@ -128,6 +155,10 @@ app.add_middleware(
     expose_headers=["X-Request-ID", "X-Response-Time"],
     max_age=600
 )
+
+# Add monitoring middleware
+app.middleware("http")(enhanced_logging_middleware)
+app.middleware("http")(metrics_middleware)
 
 
 @app.middleware("http")
@@ -298,6 +329,12 @@ async def api_info(request: Request):
         }
     }
 
+
+# Add metrics endpoint
+@app.get("/metrics")
+async def get_metrics():
+    """Prometheus metrics endpoint"""
+    return metrics_endpoint()
 
 # Include routers
 app.include_router(search_router)
