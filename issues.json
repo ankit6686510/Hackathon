@@ -160,5 +160,14 @@
     "tags": ["Refunds", "2C2P", "Insufficient-Funds", "Account-Balance", "Payment-Gateway", "Merchant-Account"],
     "created_at": "2024-09-03",
     "resolved_by": "tanisha@juspay.in"
-  }
+  },
+  {
+  "id": "JSP-1019",
+  "title": "AmazonPay Refund Fails with 'TransientError' When Initiated Too Soon",
+  "description": "BIGBASKET's auto-refund triggers within 1 min of payment success. AmazonPay requires 15+ min gap. Gateway returns 'Transient error, please retry after some time'.",
+  "resolution": "Added GSM rule to catch 'TransientError', mark refund as PENDING, and retry after 2 mins. Later extended to 30 mins. Fixed code to handle 5xx responses with error bodies.",
+  "tags": ["refund", "amazonpay", "gsm", "pt-queue", "transient-error", "config-issue"],
+  "created_at": "2025-07-22",
+  "resolved_by": "sasankh.varma@juspay.in"
+}
 ]
