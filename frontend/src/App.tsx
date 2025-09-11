@@ -329,31 +329,100 @@ const App: React.FC = () => {
       };
     }
 
-    let formattedResponse = `I found **${response.total_results}** similar issue${response.total_results > 1 ? 's' : ''} that might help:\n\n`;
+    // Separate results by relevance
+    const highlyRelevant = response.results.filter(result => result.score >= 0.6);
+    const moderatelyRelevant = response.results.filter(result => result.score >= 0.45 && result.score < 0.6);
+    const lowRelevant = response.results.filter(result => result.score < 0.45);
 
-    response.results.forEach((result, index) => {
-      formattedResponse += `## 🔍 **Issue #${index + 1}: ${result.title}**\n`;
-      formattedResponse += `**Similarity Score:** ${(result.score * 100).toFixed(1)}%\n\n`;
-      
-      formattedResponse += `**Description:**\n${result.description}\n\n`;
-      
-      if (result.resolution) {
-        formattedResponse += `**Resolution:**\n${result.resolution}\n\n`;
-      }
-      
-      formattedResponse += `**💡 AI Suggestion:**\n${result.ai_suggestion}\n\n`;
-      
-      if (result.tags && result.tags.length > 0) {
-        formattedResponse += `**Tags:** ${result.tags.map(tag => `\`${tag}\``).join(', ')}\n\n`;
-      }
-      
-      if (result.resolved_by) {
-        formattedResponse += `**Resolved by:** ${result.resolved_by}\n\n`;
-      }
-      
-      formattedResponse += `---\n\n`;
-    });
+    let formattedResponse = '';
 
+    // Show highly relevant results prominently
+    if (highlyRelevant.length > 0) {
+      const topResult = highlyRelevant[0];
+      formattedResponse += `🎯 **HIGHLY RELEVANT MATCH FOUND**\n\n`;
+      formattedResponse += `🔍 **Issue: ${topResult.title}**\n`;
+      formattedResponse += `**Similarity Score:** ${(topResult.score * 100).toFixed(1)}% | **Issue ID:** ${topResult.id}\n\n`;
+      
+      // Format description with bullet points
+      if (topResult.description) {
+        formattedResponse += `**Problem Description:**\n`;
+        const descriptionLines = topResult.description.split(/[.!?]+/).filter(line => line.trim().length > 0);
+        descriptionLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            formattedResponse += `• ${trimmedLine}\n`;
+          }
+        });
+        formattedResponse += `\n`;
+      }
+      
+      // Format resolution with numbered steps
+      if (topResult.resolution) {
+        formattedResponse += `**Resolution Steps:**\n`;
+        const resolutionLines = topResult.resolution.split(/[.!?]+/).filter(line => line.trim().length > 0);
+        resolutionLines.forEach((line, index) => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.length > 0) {
+            formattedResponse += `${index + 1}. ${trimmedLine}\n`;
+          }
+        });
+        formattedResponse += `\n`;
+      }
+      
+      // AI suggestion
+      if (topResult.ai_suggestion) {
+        formattedResponse += `💡 **Immediate Action:** ${topResult.ai_suggestion}\n\n`;
+      }
+      
+      // Resolved by
+      if (topResult.resolved_by) {
+        formattedResponse += `**Resolved by:** ${topResult.resolved_by}\n\n`;
+      }
+
+      // Show additional highly relevant results if any
+      if (highlyRelevant.length > 1) {
+        formattedResponse += `📋 **${highlyRelevant.length - 1} Additional Highly Relevant Issue${highlyRelevant.length > 2 ? 's' : ''}:**\n`;
+        highlyRelevant.slice(1).forEach((result, index) => {
+          formattedResponse += `${index + 2}. **${result.title}** (${(result.score * 100).toFixed(1)}% match)\n`;
+        });
+        formattedResponse += `\n`;
+      }
+    } else if (moderatelyRelevant.length > 0) {
+      // If no highly relevant results, show the best moderate result
+      const topResult = moderatelyRelevant[0];
+      formattedResponse += `🔍 **POTENTIALLY RELATED ISSUE FOUND**\n\n`;
+      formattedResponse += `**Issue: ${topResult.title}**\n`;
+      formattedResponse += `**Similarity Score:** ${(topResult.score * 100).toFixed(1)}% | **Issue ID:** ${topResult.id}\n\n`;
+      
+      formattedResponse += `**Description:** ${topResult.description}\n\n`;
+      
+      if (topResult.resolution) {
+        formattedResponse += `**Resolution:** ${topResult.resolution}\n\n`;
+      }
+      
+      if (topResult.ai_suggestion) {
+        formattedResponse += `💡 **Suggestion:** ${topResult.ai_suggestion}\n\n`;
+      }
+      
+      if (topResult.resolved_by) {
+        formattedResponse += `**Resolved by:** ${topResult.resolved_by}\n\n`;
+      }
+    } else {
+      // Only low relevance results
+      formattedResponse += `🔍 **SEARCH RESULTS**\n\n`;
+      formattedResponse += `Found ${response.total_results} potentially related issue${response.total_results > 1 ? 's' : ''}, but with lower similarity scores. The top result:\n\n`;
+      
+      const topResult = response.results[0];
+      formattedResponse += `**${topResult.title}** (${(topResult.score * 100).toFixed(1)}% match)\n`;
+      formattedResponse += `${topResult.description}\n\n`;
+      
+      if (topResult.ai_suggestion) {
+        formattedResponse += `💡 **Suggestion:** ${topResult.ai_suggestion}\n\n`;
+      }
+    }
+
+    // Add footer with search info
+    formattedResponse += `---\n`;
     formattedResponse += `*Search completed in ${response.execution_time_ms.toFixed(0)}ms using ${response.search_type} search*`;
     
     return {

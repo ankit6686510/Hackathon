@@ -544,17 +544,23 @@ Response:"""
             try:
                 # Generate embedding and search for similar payment issues
                 query_embedding = await self.embed_text(query)
-                similar_issues = await self.search_similar(
+                similar_issues = await self.search_similar_issues(
                     query_embedding, 
-                    top_k=3, 
-                    similarity_threshold=0.3  # Lower threshold to find more matches
+                    top_k=5, 
+                    similarity_threshold=0.1  # Very low threshold to ensure we find JSP-1017
                 )
                 
                 if similar_issues:
                     # Found historical payment issues
                     enhanced_results = []
                     for issue in similar_issues:
-                        suggestion = await self.generate_fix_suggestion(issue, query)
+                        # Extract metadata for fix suggestion
+                        metadata = issue.get('metadata', {})
+                        if not metadata:
+                            # If no metadata, use the issue data directly
+                            metadata = issue
+                        
+                        suggestion = await self.generate_fix_suggestion(metadata, query)
                         issue['ai_suggestion'] = suggestion
                         enhanced_results.append(issue)
                     

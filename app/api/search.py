@@ -121,25 +121,76 @@ async def search_issues(
             # Found historical payment issues
             for issue in smart_response["content"]:
                 try:
+                    # Extract metadata if it exists, otherwise use issue data directly
+                    metadata = issue.get("metadata", {})
+                    
+                    # Get values from metadata first, then fallback to issue level
+                    issue_id = issue.get("id", "unknown")
+                    title = metadata.get("title", issue.get("title", ""))
+                    description = metadata.get("description", issue.get("description", ""))
+                    resolution = metadata.get("resolution", issue.get("resolution", ""))
+                    tags = metadata.get("tags", issue.get("tags", []))
+                    created_at = metadata.get("created_at", issue.get("created_at", ""))
+                    resolved_by = metadata.get("resolved_by", issue.get("resolved_by", ""))
+                    score = issue.get("score", 0.0)
+                    ai_suggestion = issue.get("ai_suggestion", "")
+                    
+                    # If ai_suggestion is empty, provide a fallback
+                    if not ai_suggestion:
+                        ai_suggestion = "Fix suggestion temporarily unavailable due to API quota limits. Please refer to the resolution details above."
+                    
+                    # Handle date parsing more robustly
+                    try:
+                        if created_at and isinstance(created_at, str):
+                            parsed_date = datetime.fromisoformat(created_at)
+                        else:
+                            parsed_date = datetime(2024, 1, 1)
+                    except (ValueError, TypeError):
+                        parsed_date = datetime(2024, 1, 1)
+                    
                     result = SearchResult(
-                        id=issue["id"],
-                        title=issue["title"],
-                        description=issue["description"],
-                        resolution=issue["resolution"],
-                        ai_suggestion=issue["ai_suggestion"],
-                        score=issue["score"],
-                        tags=issue["tags"],
-                        created_at=datetime.fromisoformat(issue["created_at"]) if issue["created_at"] else datetime(2024, 1, 1),
-                        resolved_by=issue["resolved_by"]
+                        id=issue_id,
+                        title=title,
+                        description=description,
+                        resolution=resolution,
+                        ai_suggestion=ai_suggestion,
+                        score=score,
+                        tags=tags if isinstance(tags, list) else [],
+                        created_at=parsed_date,
+                        resolved_by=resolved_by if isinstance(resolved_by, str) else str(resolved_by)
                     )
                     results.append(result)
+                    
+                    logger.info(
+                        "Successfully processed historical payment issue",
+                        issue_id=issue_id,
+                        title=title[:50] + "..." if len(title) > 50 else title,
+                        score=score
+                    )
+                    
                 except Exception as e:
                     logger.error(
                         "Failed to process historical payment issue",
                         issue_id=issue.get("id", "unknown"),
-                        error=str(e)
+                        error=str(e),
+                        issue_data=str(issue)[:200] + "..." if len(str(issue)) > 200 else str(issue)
                     )
-                    continue
+                    # Don't continue - try to create a minimal result
+                    try:
+                        minimal_result = SearchResult(
+                            id=issue.get("id", "unknown"),
+                            title=issue.get("title", "Issue processing error"),
+                            description="Error processing this issue",
+                            resolution="Please contact support",
+                            ai_suggestion="Unable to process this issue due to technical error",
+                            score=issue.get("score", 0.0),
+                            tags=["Error"],
+                            created_at=datetime(2024, 1, 1),
+                            resolved_by="System"
+                        )
+                        results.append(minimal_result)
+                    except Exception as e2:
+                        logger.error("Failed to create minimal result", error=str(e2))
                     
         elif smart_response["type"] in ["ai_payment_solution", "ai_payment_solution_fallback"]:
             # AI-generated payment solution with learning
