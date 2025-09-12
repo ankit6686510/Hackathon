@@ -285,8 +285,8 @@
  
   {
     "id": "JSP-1021",
-    "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA \u2014 No PG Response",
-    "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned \u2014 empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.",
+    "title": "Card Transactions Failing in Sandbox for FirstCry AE/KSA — No PG Response",
+    "description": "VISA/Mastercard transactions failing silently in sandbox for merchant IDs 'firstcry_ae' and 'firstcry-ksa'. No error message returned — empty response body from Checkout PG. Affects order IDs: A1756372017 (KSA), A1756371043 (UAE), A1756462235, A1756461720.",
     "resolution": "\"root_cause\": \"Incorrect or missing 'processing_channel_id' configuration in Checkout dashboard for sandbox environment. PG silently fails without validation error.\",\n  \"fix_applied\": \"Configured correct processing_channel_id for FirstCry AE/KSA in Checkout sandbox dashboard. Transactions started working immediately after fix.\",\n  \"error_patterns\": [\n    {\n      \"code\": \"EMPTY_RESPONSE\",\n      \"message\": \"{}\"\n    },\n    {\n      \"message\": \"No response from PG and no error message\"\n    }\n  ],",
     "tags": [
       "card",
@@ -297,5 +297,22 @@
     ],
     "created_at": "2025-09-12",
     "resolved_by": "sajid.hussain.juspay.in"
+  },
+  {
+    "id": "JSP-1022",
+    "title": "2C2P Refund Failed - Refund Exceeded Allowable Timeframe for Order ID 1309590688",
+    "description": "Refund request for order ID 1309590688 (Unique Request Id: erf3956b532fea4dd697) is pending on Juspay dashboard and failing to process. The refund was initiated but the gateway (2C2P) returned error message 'refund exceeded the allowable timeframe', indicating that the refund window has expired at the gateway level. This occurred because the refund request was made after the allowed time period set by 2C2P. The issue was escalated to multiple team members including @Surabhi, @Tanisha, @Cindry, and @fahmi.suseno for resolution. Customer was waiting for refund processing and the failure was blocking the refund workflow.",
+    "resolution": "After investigation, found that the refund request was made outside the allowable timeframe window set by 2C2P gateway. Since the gateway is rejecting the refund request due to time constraints, the recommended solution is to process a payout to the customer instead of a traditional refund. Coordinated with the gateway team to confirm the refund window policy and advised the merchant to use payout mechanism for cases where refund timeframe has expired. Also recommended implementing proactive monitoring to alert merchants when approaching refund deadline to prevent similar issues in the future.",
+    "tags": [
+      "Refunds",
+      "2C2P",
+      "Timeframe-Expired",
+      "Payout",
+      "Gateway-Policy",
+      "Refund-Window",
+      "Customer-Support"
+    ],
+    "created_at": "2024-08-25",
+    "resolved_by": "ankit.jha@juspay.in"
   }
 ]
