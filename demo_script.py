@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FixGenie Demo Script
+SherlockAI Demo Script
 Demonstrates the working AI-powered issue intelligence system
 """
 
@@ -11,7 +11,7 @@ from datetime import datetime
 
 def print_banner():
     print("=" * 80)
-    print("🔍 FixGenie - AI-Powered Issue Intelligence System")
+    print("🔍 SherlockAI - AI-Powered Issue Intelligence System")
     print("=" * 80)
     print("✅ Streamlit REMOVED - Now using modern React frontend")
     print("✅ Backend API running on http://localhost:8000")
@@ -126,7 +126,7 @@ def main():
     print("   3. Experience the AI-powered issue intelligence!")
     print()
     
-    print("✨ FixGenie is ready for your hackathon demo!")
+    print("✨ SherlockAI is ready for your hackathon demo!")
 
 if __name__ == "__main__":
     main()

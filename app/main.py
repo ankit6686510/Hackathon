@@ -27,6 +27,8 @@ from app.api.search import router as search_router
 from app.api.health import router as health_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.api.rag import router as rag_router
+from app.api.slack_extraction import router as slack_extraction_router
 from app.monitoring import (
     setup_metrics, metrics_middleware, metrics_endpoint,
     enhanced_logging_middleware, log_system_startup, log_system_shutdown,
@@ -341,6 +343,8 @@ app.include_router(search_router)
 app.include_router(health_router)
 app.include_router(analytics_router)
 app.include_router(auth_router)
+app.include_router(rag_router)
+app.include_router(slack_extraction_router)
 
 # Add rate limiting to search endpoints
 @app.middleware("http")

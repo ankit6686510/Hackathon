@@ -1,8 +1,8 @@
-# FixGenie Monitoring System - Complete Setup Guide
+# SherlockAI Monitoring System - Complete Setup Guide
 
 ## 🎯 Overview
 
-FixGenie now includes a comprehensive, industry-grade monitoring system that provides:
+SherlockAI now includes a comprehensive, industry-grade monitoring system that provides:
 
 - **Real-time Metrics Collection** (Prometheus)
 - **Enhanced Structured Logging** (JSON format)
@@ -16,7 +16,7 @@ FixGenie now includes a comprehensive, industry-grade monitoring system that pro
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FixGenie API  │───▶│  Monitoring     │───▶│   Alerting      │
+│   SherlockAI API  │───▶│  Monitoring     │───▶│   Alerting      │
 │                 │    │  Middleware     │    │   Channels      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
@@ -44,7 +44,7 @@ ALERT_EMAIL_SMTP_HOST=smtp.gmail.com
 ALERT_EMAIL_SMTP_PORT=587
 ALERT_EMAIL_USERNAME=your-email@gmail.com
 ALERT_EMAIL_PASSWORD=your-app-password
-ALERT_EMAIL_FROM=fixgenie-alerts@yourcompany.com
+ALERT_EMAIL_FROM=SherlockAI-alerts@yourcompany.com
 ALERT_EMAIL_TO=team@yourcompany.com,ops@yourcompany.com
 
 # Sentry (Optional)
@@ -69,27 +69,27 @@ python main.py
 ### Available Metrics
 
 #### HTTP Metrics
-- `fixgenie_http_requests_total` - Total HTTP requests by method, endpoint, status
-- `fixgenie_http_request_duration_seconds` - Request duration histogram
+- `SherlockAI_http_requests_total` - Total HTTP requests by method, endpoint, status
+- `SherlockAI_http_request_duration_seconds` - Request duration histogram
 
 #### Search Metrics
-- `fixgenie_search_requests_total` - Total search requests by type and status
-- `fixgenie_search_duration_seconds` - Search duration histogram
-- `fixgenie_search_results_count` - Number of results returned
+- `SherlockAI_search_requests_total` - Total search requests by type and status
+- `SherlockAI_search_duration_seconds` - Search duration histogram
+- `SherlockAI_search_results_count` - Number of results returned
 
 #### AI Service Metrics
-- `fixgenie_ai_requests_total` - AI service requests by service, model, status
-- `fixgenie_ai_request_duration_seconds` - AI request duration
-- `fixgenie_ai_tokens_total` - Token usage tracking
+- `SherlockAI_ai_requests_total` - AI service requests by service, model, status
+- `SherlockAI_ai_request_duration_seconds` - AI request duration
+- `SherlockAI_ai_tokens_total` - Token usage tracking
 
 #### System Metrics
-- `fixgenie_db_connections_active` - Active database connections
-- `fixgenie_cache_hit_ratio` - Cache hit ratio
-- `fixgenie_errors_total` - Error count by type and component
+- `SherlockAI_db_connections_active` - Active database connections
+- `SherlockAI_cache_hit_ratio` - Cache hit ratio
+- `SherlockAI_errors_total` - Error count by type and component
 
 #### Business Metrics
-- `fixgenie_feedback_submissions_total` - User feedback by rating and helpfulness
-- `fixgenie_user_sessions_active` - Active user sessions
+- `SherlockAI_feedback_submissions_total` - User feedback by rating and helpfulness
+- `SherlockAI_user_sessions_active` - Active user sessions
 
 ### Accessing Metrics
 
@@ -98,7 +98,7 @@ python main.py
 curl http://localhost:8000/metrics
 
 # Specific metric example
-curl http://localhost:8000/metrics | grep fixgenie_search_requests_total
+curl http://localhost:8000/metrics | grep SherlockAI_search_requests_total
 ```
 
 ## 📝 Logging System
@@ -152,7 +152,7 @@ Logs are automatically rotated:
 
 ```
 logs/
-├── fixgenie.log      # Application logs (100MB, 10 backups)
+├── SherlockAI.log      # Application logs (100MB, 10 backups)
 ├── security.log      # Security events (50MB, 20 backups)
 └── business.log      # Business metrics (100MB, 15 backups)
 ```
@@ -261,7 +261,7 @@ email_channel = EmailChannel(
     smtp_port=587,
     username="your-email@gmail.com",
     password="your-app-password",
-    from_email="fixgenie-alerts@yourcompany.com",
+    from_email="SherlockAI-alerts@yourcompany.com",
     to_emails=["team@yourcompany.com", "ops@yourcompany.com"]
 )
 
@@ -307,21 +307,21 @@ brew services start grafana
 2. Login: admin/admin
 3. Add Prometheus data source: `http://localhost:9090`
 
-### 3. Import FixGenie Dashboard
+### 3. Import SherlockAI Dashboard
 
 Use this dashboard configuration:
 
 ```json
 {
   "dashboard": {
-    "title": "FixGenie Monitoring",
+    "title": "SherlockAI Monitoring",
     "panels": [
       {
         "title": "Request Rate",
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(fixgenie_http_requests_total[5m])",
+            "expr": "rate(SherlockAI_http_requests_total[5m])",
             "legendFormat": "{{method}} {{endpoint}}"
           }
         ]
@@ -331,7 +331,7 @@ Use this dashboard configuration:
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(fixgenie_http_request_duration_seconds_bucket[5m]))",
+            "expr": "histogram_quantile(0.95, rate(SherlockAI_http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "95th percentile"
           }
         ]
@@ -341,7 +341,7 @@ Use this dashboard configuration:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(fixgenie_search_requests_total[5m])",
+            "expr": "rate(SherlockAI_search_requests_total[5m])",
             "legendFormat": "Search Rate"
           }
         ]
@@ -351,7 +351,7 @@ Use this dashboard configuration:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(fixgenie_errors_total[5m])",
+            "expr": "rate(SherlockAI_errors_total[5m])",
             "legendFormat": "{{error_type}}"
           }
         ]
@@ -382,7 +382,7 @@ Create `logstash.conf`:
 ```ruby
 input {
   file {
-    path => "/path/to/fixgenie/logs/*.log"
+    path => "/path/to/SherlockAI/logs/*.log"
     start_position => "beginning"
     codec => "json"
   }
@@ -399,7 +399,7 @@ filter {
 output {
   elasticsearch {
     hosts => ["localhost:9200"]
-    index => "fixgenie-logs-%{+YYYY.MM.dd}"
+    index => "SherlockAI-logs-%{+YYYY.MM.dd}"
   }
 }
 ```
@@ -430,10 +430,10 @@ grep "Search event" logs/business.log | jq -r '.query' | sort | uniq -c | sort -
 
 ```bash
 # Error rate by component
-grep "error" logs/fixgenie.log | jq -r '.component' | sort | uniq -c
+grep "error" logs/SherlockAI.log | jq -r '.component' | sort | uniq -c
 
 # Recent critical errors
-grep "critical" logs/fixgenie.log | tail -10 | jq '.'
+grep "critical" logs/SherlockAI.log | tail -10 | jq '.'
 ```
 
 ## 🔧 Troubleshooting
@@ -505,7 +505,7 @@ metrics_collector.update_active_connections(pool.size())
 
 2. **Review Error Logs**
    ```bash
-   tail -100 logs/fixgenie.log | grep -i error
+   tail -100 logs/SherlockAI.log | grep -i error
    ```
 
 3. **Monitor Resource Usage**
@@ -527,7 +527,7 @@ metrics_collector.update_active_connections(pool.size())
 
 3. **Check Alert History**
    ```bash
-   grep "Alert triggered" logs/fixgenie.log | tail -20
+   grep "Alert triggered" logs/SherlockAI.log | tail -20
    ```
 
 ### Monthly Tasks
@@ -583,7 +583,7 @@ class CustomSlackChannel(SlackChannel):
     async def send_alert(self, alert):
         # Custom message formatting
         payload = {
-            "text": f"🚨 FixGenie Alert: {alert.title}",
+            "text": f"🚨 SherlockAI Alert: {alert.title}",
             "attachments": [
                 {
                     "color": "danger" if alert.severity == "critical" else "warning",
@@ -613,7 +613,7 @@ class PagerDutyChannel(AlertChannel):
             "payload": {
                 "summary": alert.title,
                 "severity": alert.severity.value,
-                "source": "FixGenie"
+                "source": "SherlockAI"
             }
         }
         
@@ -628,7 +628,7 @@ class PagerDutyChannel(AlertChannel):
 
 For monitoring system support:
 
-1. **Check logs**: `logs/fixgenie.log`
+1. **Check logs**: `logs/SherlockAI.log`
 2. **Health status**: `GET /api/v1/health`
 3. **Metrics**: `GET /metrics`
 4. **Documentation**: This guide
@@ -636,7 +636,7 @@ For monitoring system support:
 
 ---
 
-**🎉 Your FixGenie monitoring system is now fully operational!**
+**🎉 Your SherlockAI monitoring system is now fully operational!**
 
 The system will automatically:
 - ✅ Collect comprehensive metrics

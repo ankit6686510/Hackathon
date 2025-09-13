@@ -12,6 +12,7 @@ import structlog
 from app.models import SearchRequest, SearchResponse, SearchResult, SearchLog
 from app.database import get_database, get_redis
 from app.services.ai_service import ai_service
+from app.services.hybrid_search import hybrid_search_service
 from app.config import settings
 import json
 import hashlib
@@ -67,6 +68,186 @@ def generate_search_cache_key(search_request: SearchRequest) -> str:
     }
     cache_string = json.dumps(cache_data, sort_keys=True)
     return f"search:{hashlib.md5(cache_string.encode()).hexdigest()}"
+
+
+@router.post("/search/hybrid", response_model=SearchResponse)
+async def hybrid_search_issues(
+    search_request: SearchRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_database)
+):
+    """
+    Search for payment-related issues using Hybrid Search (Semantic + BM25 + TF-IDF)
+    
+    This endpoint performs hybrid search combining semantic similarity, BM25 keyword matching,
+    and TF-IDF scoring to find the most relevant solutions with better coverage.
+    PAYMENT DOMAIN ONLY - Non-payment queries will be rejected.
+    """
+    start_time = time.time()
+    
+    try:
+        # Validate request
+        if not search_request.query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        if search_request.top_k > settings.max_top_k:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"top_k cannot exceed {settings.max_top_k}"
+            )
+        
+        # Validate payment domain
+        domain_validation = ai_service.validate_payment_domain(search_request.query)
+        
+        if not domain_validation["is_payment_related"]:
+            # Non-payment query - return rejection message
+            result = SearchResult(
+                id="domain-rejection",
+                title="Payment Domain Only",
+                description="This system specializes in payment-related issues only.",
+                resolution="I specialize in payment-related issues only. Please ask about UPI transactions, payment gateways, card processing, bank integrations, payment errors, or other payment-related topics.",
+                ai_suggestion="Please ask about UPI transactions, payment gateways, card processing, bank integrations, payment errors, or other payment-related topics.",
+                score=1.0,
+                tags=["Domain-Restriction", "Payment-Only"],
+                created_at=datetime.utcnow(),
+                resolved_by="SherlockAI Domain Filter"
+            )
+            
+            execution_time_ms = (time.time() - start_time) * 1000
+            response = SearchResponse(
+                query=search_request.query,
+                results=[result],
+                total_results=1,
+                execution_time_ms=execution_time_ms,
+                search_type="domain_validation",
+                timestamp=datetime.utcnow()
+            )
+            return response
+        
+        # Perform hybrid search
+        logger.info("Processing payment domain query with hybrid search", query=search_request.query)
+        hybrid_results = await hybrid_search_service.hybrid_search(
+            query=search_request.query,
+            top_k=search_request.top_k,
+            min_score=0.1  # Lower threshold for better coverage
+        )
+        
+        results = []
+        
+        if hybrid_results:
+            # Process hybrid search results
+            for hybrid_result in hybrid_results:
+                try:
+                    # Generate AI suggestion for each result
+                    ai_suggestion = await ai_service.generate_fix_suggestion(hybrid_result, search_request.query)
+                    
+                    # Handle date parsing
+                    try:
+                        created_at = hybrid_result.get('created_at', '')
+                        if created_at and isinstance(created_at, str):
+                            parsed_date = datetime.fromisoformat(created_at)
+                        else:
+                            parsed_date = datetime(2024, 1, 1)
+                    except (ValueError, TypeError):
+                        parsed_date = datetime(2024, 1, 1)
+                    
+                    result = SearchResult(
+                        id=hybrid_result.get('id', ''),
+                        title=hybrid_result.get('title', ''),
+                        description=hybrid_result.get('description', ''),
+                        resolution=hybrid_result.get('resolution', ''),
+                        ai_suggestion=ai_suggestion,
+                        score=hybrid_result.get('fused_score', 0.0),
+                        tags=hybrid_result.get('tags', []),
+                        created_at=parsed_date,
+                        resolved_by=str(hybrid_result.get('resolved_by', ''))
+                    )
+                    results.append(result)
+                    
+                    logger.info(
+                        "Successfully processed hybrid search result",
+                        issue_id=hybrid_result.get('id', ''),
+                        title=hybrid_result.get('title', '')[:50] + "..." if len(hybrid_result.get('title', '')) > 50 else hybrid_result.get('title', ''),
+                        fused_score=hybrid_result.get('fused_score', 0.0),
+                        search_methods=hybrid_result.get('search_methods', [])
+                    )
+                    
+                except Exception as e:
+                    logger.error(
+                        "Failed to process hybrid search result",
+                        issue_id=hybrid_result.get('id', 'unknown'),
+                        error=str(e)
+                    )
+        
+        # If no results found, provide helpful fallback
+        if not results:
+            # Try to get suggestions based on query keywords
+            suggestions = await hybrid_search_service.get_search_suggestions(search_request.query)
+            
+            suggestion_text = ""
+            if suggestions:
+                suggestion_text = f"\n\n💡 **You might want to search for:**\n" + "\n".join([f"• {s}" for s in suggestions])
+            
+            result = SearchResult(
+                id="no-results-found",
+                title="No Matching Issues Found",
+                description=f"No exact matches found for '{search_request.query}' in our knowledge base.",
+                resolution=f"This might be a new type of issue that hasn't been encountered before.{suggestion_text}\n\n**Next Steps:**\n• Check recent documentation\n• Contact the team that owns the affected service\n• Document this issue for future reference once resolved",
+                ai_suggestion="Consider searching with different keywords or check if this is a new issue that needs to be documented.",
+                score=1.0,
+                tags=["No-Results", "New-Issue"],
+                created_at=datetime.utcnow(),
+                resolved_by="SherlockAI Hybrid Search"
+            )
+            results.append(result)
+        
+        execution_time_ms = (time.time() - start_time) * 1000
+        
+        # Create response
+        response = SearchResponse(
+            query=search_request.query,
+            results=results,
+            total_results=len(results),
+            execution_time_ms=execution_time_ms,
+            search_type="hybrid",
+            timestamp=datetime.utcnow()
+        )
+        
+        # Log search request in background
+        background_tasks.add_task(
+            log_search_request,
+            db,
+            request,
+            search_request,
+            [result.dict() for result in results],
+            execution_time_ms
+        )
+        
+        logger.info(
+            "Hybrid search completed",
+            query=search_request.query,
+            results_count=len(results),
+            execution_time_ms=execution_time_ms,
+            domain_validation=domain_validation
+        )
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        execution_time_ms = (time.time() - start_time) * 1000
+        logger.error(
+            "Hybrid search request failed",
+            query=search_request.query,
+            error=str(e),
+            execution_time_ms=execution_time_ms
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Hybrid search failed: {str(e)}"
+        )
 
 
 @router.post("/search", response_model=SearchResponse)

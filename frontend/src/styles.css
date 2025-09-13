@@ -1068,7 +1068,7 @@ html {
   color: #d1d5db;
 }
 
-.fixgenie-footer {
+.SherlockAI-footer {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
   border: 1px solid rgba(102, 126, 234, 0.2);
   border-radius: 12px;
@@ -1077,14 +1077,14 @@ html {
   text-align: center;
 }
 
-.fixgenie-footer-text {
+.SherlockAI-footer-text {
   color: #a78bfa;
   font-weight: 600;
   font-size: 1rem;
   margin-bottom: 0.5rem;
 }
 
-.fixgenie-footer-meta {
+.SherlockAI-footer-meta {
   color: #9ca3af;
   font-size: 0.875rem;
   font-style: italic;

@@ -1,5 +1,5 @@
 """
-Prometheus metrics collection for FixGenie
+Prometheus metrics collection for SherlockAI
 """
 
 import time
@@ -16,128 +16,128 @@ import structlog
 
 logger = structlog.get_logger()
 
-# Create custom registry for FixGenie metrics
-fixgenie_registry = CollectorRegistry()
+# Create custom registry for SherlockAI metrics
+SherlockAI_registry = CollectorRegistry()
 
 # Request metrics
 http_requests_total = Counter(
-    'fixgenie_http_requests_total',
+    'SherlockAI_http_requests_total',
     'Total HTTP requests',
     ['method', 'endpoint', 'status_code'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 http_request_duration_seconds = Histogram(
-    'fixgenie_http_request_duration_seconds',
+    'SherlockAI_http_request_duration_seconds',
     'HTTP request duration in seconds',
     ['method', 'endpoint'],
     buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # Search metrics
 search_requests_total = Counter(
-    'fixgenie_search_requests_total',
+    'SherlockAI_search_requests_total',
     'Total search requests',
     ['search_type', 'status'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 search_duration_seconds = Histogram(
-    'fixgenie_search_duration_seconds',
+    'SherlockAI_search_duration_seconds',
     'Search request duration in seconds',
     ['search_type'],
     buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 30.0],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 search_results_count = Histogram(
-    'fixgenie_search_results_count',
+    'SherlockAI_search_results_count',
     'Number of search results returned',
     ['search_type'],
     buckets=[0, 1, 3, 5, 10, 20],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # AI service metrics
 ai_requests_total = Counter(
-    'fixgenie_ai_requests_total',
+    'SherlockAI_ai_requests_total',
     'Total AI service requests',
     ['service', 'model', 'status'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 ai_request_duration_seconds = Histogram(
-    'fixgenie_ai_request_duration_seconds',
+    'SherlockAI_ai_request_duration_seconds',
     'AI service request duration in seconds',
     ['service', 'model'],
     buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 20.0],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 ai_token_usage = Counter(
-    'fixgenie_ai_tokens_total',
+    'SherlockAI_ai_tokens_total',
     'Total AI tokens consumed',
     ['service', 'model', 'type'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # Database metrics
 db_connections_active = Gauge(
-    'fixgenie_db_connections_active',
+    'SherlockAI_db_connections_active',
     'Active database connections',
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 db_query_duration_seconds = Histogram(
-    'fixgenie_db_query_duration_seconds',
+    'SherlockAI_db_query_duration_seconds',
     'Database query duration in seconds',
     ['operation'],
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # Cache metrics
 cache_requests_total = Counter(
-    'fixgenie_cache_requests_total',
+    'SherlockAI_cache_requests_total',
     'Total cache requests',
     ['operation', 'status'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 cache_hit_ratio = Gauge(
-    'fixgenie_cache_hit_ratio',
+    'SherlockAI_cache_hit_ratio',
     'Cache hit ratio',
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # Business metrics
 feedback_submissions_total = Counter(
-    'fixgenie_feedback_submissions_total',
+    'SherlockAI_feedback_submissions_total',
     'Total feedback submissions',
     ['rating', 'helpful'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 user_sessions_active = Gauge(
-    'fixgenie_user_sessions_active',
+    'SherlockAI_user_sessions_active',
     'Active user sessions',
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # System metrics
 system_info = Info(
-    'fixgenie_system_info',
+    'SherlockAI_system_info',
     'System information',
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 # Error metrics
 errors_total = Counter(
-    'fixgenie_errors_total',
+    'SherlockAI_errors_total',
     'Total errors',
     ['error_type', 'component'],
-    registry=fixgenie_registry
+    registry=SherlockAI_registry
 )
 
 
@@ -291,7 +291,7 @@ async def metrics_middleware(request: Request, call_next):
 def metrics_endpoint():
     """Prometheus metrics endpoint"""
     return PlainTextResponse(
-        generate_latest(fixgenie_registry),
+        generate_latest(SherlockAI_registry),
         media_type=CONTENT_TYPE_LATEST
     )
 

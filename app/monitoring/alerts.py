@@ -1,5 +1,5 @@
 """
-Alerting system for FixGenie monitoring
+Alerting system for SherlockAI monitoring
 """
 
 import asyncio
@@ -91,7 +91,7 @@ class SlackChannel(AlertChannel):
             
             payload = {
                 "channel": self.channel,
-                "username": "FixGenie Alerts",
+                "username": "SherlockAI Alerts",
                 "icon_emoji": ":warning:",
                 "attachments": [
                     {
@@ -115,7 +115,7 @@ class SlackChannel(AlertChannel):
                                 "short": True
                             }
                         ],
-                        "footer": "FixGenie Monitoring",
+                        "footer": "SherlockAI Monitoring",
                         "ts": int(alert.timestamp.timestamp())
                     }
                 ]
@@ -149,7 +149,7 @@ class SlackChannel(AlertChannel):
         try:
             payload = {
                 "channel": self.channel,
-                "username": "FixGenie Alerts",
+                "username": "SherlockAI Alerts",
                 "icon_emoji": ":white_check_mark:",
                 "attachments": [
                     {
@@ -168,7 +168,7 @@ class SlackChannel(AlertChannel):
                                 "short": True
                             }
                         ],
-                        "footer": "FixGenie Monitoring",
+                        "footer": "SherlockAI Monitoring",
                         "ts": int(alert.resolved_at.timestamp()) if alert.resolved_at else int(datetime.utcnow().timestamp())
                     }
                 ]
@@ -231,7 +231,7 @@ class EmailChannel(AlertChannel):
     async def send_alert(self, alert: Alert) -> bool:
         """Send alert via email"""
         try:
-            subject = f"[FixGenie Alert] {alert.severity.value.upper()}: {alert.title}"
+            subject = f"[SherlockAI Alert] {alert.severity.value.upper()}: {alert.title}"
             
             # Create HTML email body
             html_body = self._create_alert_html(alert)
@@ -262,7 +262,7 @@ class EmailChannel(AlertChannel):
     async def send_resolution(self, alert: Alert) -> bool:
         """Send alert resolution via email"""
         try:
-            subject = f"[FixGenie Alert] RESOLVED: {alert.title}"
+            subject = f"[SherlockAI Alert] RESOLVED: {alert.title}"
             
             # Create HTML email body
             html_body = self._create_resolution_html(alert)
@@ -304,7 +304,7 @@ class EmailChannel(AlertChannel):
         <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa;">
             <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="background-color: {severity_color}; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; font-size: 24px;">🚨 FixGenie Alert</h1>
+                    <h1 style="margin: 0; font-size: 24px;">🚨 SherlockAI Alert</h1>
                     <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">{alert.severity.value.upper()} Severity</p>
                 </div>
                 
@@ -341,7 +341,7 @@ class EmailChannel(AlertChannel):
                 </div>
                 
                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 0 0 8px 8px; text-align: center;">
-                    <p style="margin: 0; color: #666; font-size: 14px;">FixGenie Monitoring System</p>
+                    <p style="margin: 0; color: #666; font-size: 14px;">SherlockAI Monitoring System</p>
                 </div>
             </div>
         </body>
@@ -371,7 +371,7 @@ class EmailChannel(AlertChannel):
             <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <div style="background-color: #28a745; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                     <h1 style="margin: 0; font-size: 24px;">✅ Alert Resolved</h1>
-                    <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">FixGenie Alert System</p>
+                    <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">SherlockAI Alert System</p>
                 </div>
                 
                 <div style="padding: 20px;">
@@ -395,7 +395,7 @@ class EmailChannel(AlertChannel):
                 </div>
                 
                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 0 0 8px 8px; text-align: center;">
-                    <p style="margin: 0; color: #666; font-size: 14px;">FixGenie Monitoring System</p>
+                    <p style="margin: 0; color: #666; font-size: 14px;">SherlockAI Monitoring System</p>
                 </div>
             </div>
         </body>
@@ -470,7 +470,7 @@ class AlertManager:
             description=rule.description,
             severity=rule.severity,
             status=AlertStatus.ACTIVE,
-            source="FixGenie Monitoring",
+            source="SherlockAI Monitoring",
             timestamp=datetime.utcnow(),
             labels=rule.labels.copy(),
             annotations={"metrics": json.dumps(metrics, default=str)}
@@ -519,9 +519,9 @@ class AlertManager:
         return self.alert_history[-limit:]
 
 
-# Pre-defined alert rules for FixGenie
+# Pre-defined alert rules for SherlockAI
 def create_default_alert_rules() -> List[AlertRule]:
-    """Create default alert rules for FixGenie"""
+    """Create default alert rules for SherlockAI"""
     rules = []
     
     # High error rate

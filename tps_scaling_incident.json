@@ -1,0 +1,13 @@
+{
+  "id": "JSP-2001",
+  "title": "Merchant TPS Limit Increase Request - Traffic Spike Preparation",
+  "description": "Merchant BigCommerce requested TPS increase from 200 to 1500 for Black Friday sale. Current infrastructure analysis shows: 1) Current TPS: 200, 2) Requested TPS: 1500, 3) Peak traffic expected during 48-hour sale period, 4) Cost implications for infrastructure scaling, 5) Risk assessment for sudden traffic spikes. Merchant insisting on maximum TPS but infrastructure team recommends gradual scaling approach. Need to balance merchant requirements with system stability and cost optimization.",
+  "resolution": "1) Conducted infrastructure capacity analysis and cost estimation, 2) Proposed tiered scaling approach: immediate increase to 500 TPS, then 800 TPS after monitoring, 3) Implemented intelligent traffic shaping and load balancing, 4) Set up real-time monitoring and auto-scaling triggers, 5) Provided cost breakdown: 500 TPS = $2000/month, 1000 TPS = $5000/month, 1500 TPS = $8500/month, 6) Established SLA agreements and rollback procedures, 7) Created traffic spike response playbook for future events.",
+  "status": "resolved",
+  "tags": ["TPS", "Scaling", "Traffic-Spike", "Capacity-Planning", "Cost-Estimation", "Infrastructure", "Merchant-Limits", "Load-Balancing", "Auto-Scaling", "SLA"],
+  "created_at": "2024-11-15T00:00:00.000000",
+  "resolved_at": "2024-11-18T00:00:00.000000",
+  "resolved_by": "infrastructure-team@juspay.in",
+  "priority": "high",
+  "category": "infrastructure"
+}

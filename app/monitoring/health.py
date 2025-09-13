@@ -1,5 +1,5 @@
 """
-Health checking and system monitoring for FixGenie
+Health checking and system monitoring for SherlockAI
 """
 
 import asyncio

@@ -22,9 +22,30 @@ interface SearchResult {
   resolution: string;
   ai_suggestion: string;
   score: number;
+  fused_score?: number;
   tags: string[];
   created_at: string;
   resolved_by?: string;
+  // Additional properties from RAG response
+  semantic_score?: number;
+  bm25_score?: number;
+  tfidf_score?: number;
+  search_type?: string;
+  search_methods?: string[];
+  method_count?: number;
+  relevance_score?: number;
+  boosted_score?: number;
+  // Priority matching properties
+  match_type?: string;
+  priority_details?: {
+    query_merchant?: string;
+    query_gateway?: string;
+    result_merchant?: string;
+    result_gateway?: string;
+    merchant_match?: boolean;
+    gateway_match?: boolean;
+    exact_match?: boolean;
+  };
 }
 
 interface FeedbackState {
@@ -39,12 +60,28 @@ interface FeedbackState {
 }
 
 interface SearchResponse {
-  query: string;
-  results: SearchResult[];
-  total_results: number;
-  execution_time_ms: number;
-  search_type: string;
-  timestamp: string;
+  result?: {
+    query: string;
+    generated_answer: string;
+    retrieved_incidents: SearchResult[];
+    sources: string[];
+    confidence_score: number;
+    query_complexity: string;
+    execution_time_ms: number;
+    rag_strategy: string;
+  };
+  metadata?: {
+    confidence_level: string;
+    incidents_retrieved: number;
+    status: string;
+  };
+  // Legacy hybrid search format
+  query?: string;
+  results?: SearchResult[];
+  total_results?: number;
+  execution_time_ms?: number;
+  search_type?: string;
+  timestamp?: string;
 }
 
 interface ErrorBoundaryState {
@@ -355,250 +392,354 @@ const App: React.FC = () => {
   }, [inputValue]);
 
   const formatSearchResults = (response: SearchResponse): { content: string; results: SearchResult[] } => {
+    // Handle RAG response format with enhanced formatting
+    if (response.result) {
+      const ragResult = response.result;
+      
+      // Check if it's a "no results" response
+      if (ragResult.retrieved_incidents.length === 0) {
+        return {
+          content: ragResult.generated_answer,
+          results: []
+        };
+      }
+
+      // Create enhanced incident report format
+      const topIncident = ragResult.retrieved_incidents[0];
+      const confidence = ragResult.confidence_score;
+      const executionTime = ragResult.execution_time_ms;
+      
+      // ENHANCED MATCH DETECTION AND CONTEXT INTELLIGENCE
+      const isPerfectMatch = confidence >= 0.98;
+      const isExactMatch = confidence >= 0.9;
+      const isHighlyRelevant = confidence >= 0.75;
+      const isModeratelyRelevant = confidence >= 0.5;
+      const isLowRelevant = confidence >= 0.3;
+      
+      // Detect technical domain for smart context
+      const queryLower = ragResult.query.toLowerCase();
+      const titleLower = topIncident.title.toLowerCase();
+      
+      let technicalDomain = '';
+      let domainIcon = '';
+      if (queryLower.includes('rsa') || queryLower.includes('pkcs') || queryLower.includes('encryption')) {
+        technicalDomain = 'CRYPTOGRAPHIC INTEGRATION ISSUE';
+        domainIcon = '🔐';
+      } else if (queryLower.includes('webhook') || queryLower.includes('callback')) {
+        technicalDomain = 'WEBHOOK INTEGRATION ISSUE';
+        domainIcon = '🔗';
+      } else if (queryLower.includes('upi') || queryLower.includes('payment')) {
+        technicalDomain = 'PAYMENT PROCESSING ISSUE';
+        domainIcon = '💳';
+      } else if (queryLower.includes('gateway') || queryLower.includes('api')) {
+        technicalDomain = 'GATEWAY INTEGRATION ISSUE';
+        domainIcon = '🌐';
+      } else {
+        technicalDomain = 'TECHNICAL ISSUE';
+        domainIcon = '⚙️';
+      }
+      
+      // Enhanced match quality detection
+      let matchQuality, matchType;
+      if (isPerfectMatch) {
+        matchQuality = 'PERFECT MATCH';
+        matchType = 'EXACT TITLE MATCH';
+      } else if (isExactMatch) {
+        matchQuality = 'EXACT MATCH';
+        matchType = 'PRECISE TECHNICAL MATCH';
+      } else if (isHighlyRelevant) {
+        matchQuality = 'HIGHLY RELEVANT';
+        matchType = 'STRONG SEMANTIC MATCH';
+      } else if (isModeratelyRelevant) {
+        matchQuality = 'POTENTIALLY RELATED';
+        matchType = 'MODERATE SIMILARITY';
+      } else if (isLowRelevant) {
+        matchQuality = 'LIMITED RELEVANCE';
+        matchType = 'WEAK SIMILARITY';
+      } else {
+        matchQuality = 'WEAK MATCH';
+        matchType = 'MINIMAL RELEVANCE';
+      }
+      
+      const priority = isPerfectMatch ? '🎯 P0' :
+                      isExactMatch ? '🔥 P0' : 
+                      isHighlyRelevant ? '⚠️ P1' : 
+                      isModeratelyRelevant ? '📋 P2' : '⚪ P3';
+      
+      // Build enhanced incident report
+      let formattedResponse = '';
+
+      // Header with incident match detection
+      formattedResponse += `🚨 **INCIDENT MATCH FOUND** - ${topIncident.id}\n`;
+      formattedResponse += `${'━'.repeat(50)}\n\n`;
+      
+      // ENHANCED SMART CONTEXT DETECTION WITH PRIORITY MATCHING
+      const query = ragResult.query.toLowerCase();
+      let contextDetection = '';
+      
+      // Check for priority matching details
+      const priorityDetails = topIncident.priority_details || {};
+      const priorityMatchType = topIncident.match_type || 'SEMANTIC_MATCH';
+      const merchantMatch = priorityDetails.merchant_match;
+      const gatewayMatch = priorityDetails.gateway_match;
+      
+      if (priorityMatchType === 'PERFECT_MERCHANT_GATEWAY_MATCH') {
+        // Perfect priority match: same merchant + same gateway
+        const merchant = priorityDetails.query_merchant || 'merchant';
+        const gateway = priorityDetails.query_gateway || 'gateway';
+        contextDetection = `🎯 **PERFECT MATCH**: ${merchant} + ${gateway} Integration`;
+      } else if (priorityMatchType === 'MERCHANT_ID_MATCH') {
+        // High priority: same merchant
+        const merchant = priorityDetails.query_merchant || 'merchant';
+        contextDetection = `🏆 **MERCHANT MATCH**: ${merchant} - Same Merchant Integration`;
+      } else if (priorityMatchType === 'PAYMENT_GATEWAY_MATCH') {
+        // Medium priority: same gateway
+        const gateway = priorityDetails.query_gateway || 'gateway';
+        contextDetection = `🥈 **GATEWAY MATCH**: ${gateway} - Same Payment Gateway`;
+      } else if (isPerfectMatch || isExactMatch) {
+        // For perfect/exact matches, show specific technical domain
+        if (technicalDomain === 'CRYPTOGRAPHIC INTEGRATION ISSUE') {
+          contextDetection = `${domainIcon} **PERFECT MATCH FOUND**: ${technicalDomain}`;
+        } else if (query.includes('snapdeal') && query.includes('pinelabs')) {
+          contextDetection = '🎯 **PERFECT MATCH**: Snapdeal + Pinelabs RSA Decryption Issue';
+        } else if (query.includes('webhook') && query.includes('ssl')) {
+          contextDetection = '🔗 **PERFECT MATCH**: Webhook SSL Certificate Issue';
+        } else {
+          contextDetection = `🎯 **PERFECT MATCH**: ${technicalDomain}`;
+        }
+      } else if (isHighlyRelevant) {
+        // For highly relevant matches, show pattern detection
+        if (query.includes('payment') && query.includes('gateway')) {
+          contextDetection = '🌐 **PATTERN MATCH**: Payment Gateway Integration Issue';
+        } else if (query.includes('upi') && query.includes('timeout')) {
+          contextDetection = '💳 **PATTERN MATCH**: UPI Payment Timeout Issue';
+        } else {
+          contextDetection = `${domainIcon} **PATTERN MATCH**: ${technicalDomain}`;
+        }
+      } else {
+        // For lower relevance, show generic match
+        contextDetection = `${domainIcon} **INCIDENT MATCH**: ${technicalDomain}`;
+      }
+      
+      formattedResponse += `${contextDetection}\n`;
+      formattedResponse += `📊 **Confidence**: ${(confidence * 100).toFixed(0)}% | **Match Type**: ${matchType}\n`;
+      formattedResponse += `⚡ **Impact**: ${priority} - ${isPerfectMatch || isExactMatch ? 'Production Blocking' : isHighlyRelevant ? 'Service Degradation' : 'Minor Impact'}\n\n`;
+
+      // Problem Summary Section with Beautiful Numbered List Formatting
+      formattedResponse += `📋 **PROBLEM SUMMARY**\n`;
+      if (topIncident.description) {
+        const description = topIncident.description;
+        
+        // Check if description contains numbered lists (1), 2), 3) etc.)
+        const numberedListPattern = /(\d+\)\s*[^,]+(?:,\s*\d+\)\s*[^,]+)*)/g;
+        const numberedMatches = description.match(numberedListPattern);
+        
+        if (numberedMatches && numberedMatches.length > 0) {
+          // Extract and format numbered items beautifully
+          const numberedText = numberedMatches[0];
+          
+          // Split on numbered patterns and clean up
+          const numberedItems = numberedText.split(/(?=\d+\))/).filter(item => item.trim().length > 0);
+          
+          numberedItems.forEach(item => {
+            const cleanItem = item.trim().replace(/,$/, '').replace(/\s+/g, ' ');
+            if (cleanItem.length > 0 && /^\d+\)/.test(cleanItem)) {
+              formattedResponse += `${cleanItem}\n`;
+            }
+          });
+          
+          // Add any remaining non-numbered content
+          const remainingText = description.replace(numberedListPattern, '').trim();
+          if (remainingText.length > 0) {
+            const remainingLines = remainingText.split(/[.!?]+/).filter(line => line.trim().length > 0);
+            remainingLines.slice(0, 2).forEach(line => {
+              const trimmedLine = line.trim();
+              if (trimmedLine.length > 0 && !trimmedLine.match(/^\d+\)/)) {
+                formattedResponse += `→ ${trimmedLine}\n`;
+              }
+            });
+          }
+        } else {
+          // Fallback to original formatting for non-numbered descriptions
+          const descriptionLines = description.split(/[.!?]+/).filter(line => line.trim().length > 0);
+          descriptionLines.slice(0, 4).forEach(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.length > 0) {
+              formattedResponse += `→ ${trimmedLine}\n`;
+            }
+          });
+        }
+      }
+      formattedResponse += `\n`;
+
+      // AI-Generated Immediate Fix
+      formattedResponse += `🔧 **IMMEDIATE FIX** (AI-Generated)\n`;
+      formattedResponse += `💡 ${ragResult.generated_answer.replace('Fix Suggestion: ', '')}\n\n`;
+
+      // Enhanced Step-by-step Resolution with Better Parsing
+      if (topIncident.resolution) {
+        formattedResponse += `🛠️ **STEP-BY-STEP RESOLUTION**\n`;
+        
+        const resolution = topIncident.resolution;
+        
+        // Check if resolution already contains numbered steps
+        const hasNumberedSteps = /\d+\)\s/.test(resolution);
+        
+        if (hasNumberedSteps) {
+          // Parse existing numbered format (1), 2), 3) etc.)
+          const numberedSteps = resolution.split(/(?=\d+\))/).filter(step => step.trim().length > 0);
+          
+          numberedSteps.forEach(step => {
+            const cleanStep = step.trim().replace(/,$/, '').replace(/\s+/g, ' ');
+            if (cleanStep.length > 0 && /^\d+\)/.test(cleanStep)) {
+              formattedResponse += `${cleanStep}\n`;
+            }
+          });
+        } else {
+          // Parse paragraph-style resolution into logical steps
+          const sentences = resolution.split(/[.!?]+/).filter(line => line.trim().length > 0);
+          
+          // Group related sentences and create logical steps
+          const logicalSteps = [];
+          let currentStep = '';
+          
+          sentences.forEach(sentence => {
+            const trimmedSentence = sentence.trim();
+            if (trimmedSentence.length === 0) return;
+            
+            // Check if this sentence starts a new action/step
+            const startsNewStep = /^(Issue|Root cause|Recommended|Suggested|Resolution|Fixed|Implemented|Updated|Added|Created|Established|Coordinated|Identified|Investigation|Development|Configuration|Solution|Fix|Changes|Deployment)/i.test(trimmedSentence);
+            
+            if (startsNewStep && currentStep.length > 0) {
+              // Save previous step and start new one
+              logicalSteps.push(currentStep.trim());
+              currentStep = trimmedSentence;
+            } else if (startsNewStep) {
+              // Start first step
+              currentStep = trimmedSentence;
+            } else {
+              // Continue current step
+              currentStep += (currentStep.length > 0 ? '. ' : '') + trimmedSentence;
+            }
+          });
+          
+          // Add the last step
+          if (currentStep.length > 0) {
+            logicalSteps.push(currentStep.trim());
+          }
+          
+          // Format as numbered steps
+          logicalSteps.slice(0, 6).forEach((step, index) => {
+            if (step.length > 0) {
+              formattedResponse += `${index + 1}. ${step}\n`;
+            }
+          });
+        }
+        
+        formattedResponse += `\n`;
+      }
+
+      // Expert Contact Information
+      if (topIncident.resolved_by) {
+        formattedResponse += `👨‍💻 **EXPERT CONTACT**\n`;
+        const resolverEmail = topIncident.resolved_by.includes('@') ? 
+          topIncident.resolved_by : `${topIncident.resolved_by}@juspay.in`;
+        formattedResponse += `📧 ${resolverEmail} (Original Resolver)\n`;
+        formattedResponse += `📅 Resolved: ${topIncident.created_at}\n\n`;
+      }
+
+      // Tags Section
+      if (topIncident.tags && topIncident.tags.length > 0) {
+        formattedResponse += `🏷️ **TAGS**: ${topIncident.tags.map(tag => `\`${tag}\``).join(' • ')}\n\n`;
+      }
+
+      // Impact Metrics
+      formattedResponse += `📈 **IMPACT METRICS**\n`;
+      const estimatedSavings = isHighlyRelevant ? '2 hours → 15 minutes' : isModeratelyRelevant ? '1 hour → 30 minutes' : '45 minutes → 20 minutes';
+      formattedResponse += `• Resolution Time: ${estimatedSavings} (with this knowledge)\n`;
+      formattedResponse += `• Similar Issues Prevented: ${isHighlyRelevant ? '5+' : '2-3'} future incidents\n`;
+      formattedResponse += `• Team Efficiency: ${isHighlyRelevant ? '90%' : '70%'} faster debugging\n\n`;
+
+      // Related Incidents (if multiple results)
+      if (ragResult.retrieved_incidents.length > 1) {
+        formattedResponse += `🔗 **RELATED INCIDENTS**\n`;
+        ragResult.retrieved_incidents.slice(1, 3).forEach((incident, index) => {
+          const score = incident.fused_score || incident.score || 0;
+          formattedResponse += `${index + 2}. **${incident.id}** - ${incident.title.substring(0, 50)}${incident.title.length > 50 ? '...' : ''}\n`;
+          formattedResponse += `   📊 Similarity: ${(score * 100).toFixed(0)}% | 🏷️ ${incident.tags?.slice(0, 3).join(', ') || 'No tags'}\n`;
+        });
+        formattedResponse += `\n`;
+      }
+
+      // Performance Footer
+      formattedResponse += `---\n`;
+      formattedResponse += `⚡ *Search completed in ${executionTime.toFixed(0)}ms using ${ragResult.rag_strategy} • Powered by SherlockAI AI*`;
+
+      return {
+        content: formattedResponse,
+        results: ragResult.retrieved_incidents
+      };
+    }
+
+    // Handle legacy hybrid search format (fallback)
     if (response.total_results === 0) {
       return {
-        content: `🔍 **NO MATCHING INCIDENTS FOUND**\n\n❌ I couldn't find any similar issues in our knowledge base for "${response.query}". This might be a new type of issue.\n\n**📋 Next Steps:**\n→ Check if this is a known issue in recent documentation\n→ Consider reaching out to the team that owns the affected service\n→ Document this issue for future reference once resolved\n\n---\n*Search completed in ${response.execution_time_ms.toFixed(0)}ms using ${response.search_type} search*`,
+        content: `🔍 **NO MATCHING INCIDENTS FOUND**\n\n❌ I couldn't find any similar issues in our knowledge base for "${response.query}". This might be a new type of issue.\n\n**📋 Next Steps:**\n→ Check if this is a known issue in recent documentation\n→ Consider reaching out to the team that owns the affected service\n→ Document this issue for future reference once resolved\n\n---\n*Search completed in ${response.execution_time_ms?.toFixed(0)}ms using ${response.search_type} search*`,
         results: []
       };
     }
 
-    const topResult = response.results[0];
-    const isHighlyRelevant = topResult.score >= 0.6;
-    const isModeratelyRelevant = topResult.score >= 0.45;
-    
-    // Determine priority and status based on score
-    const priority = isHighlyRelevant ? '🔥 P0' : isModeratelyRelevant ? '⚠️ P1' : '📋 P2';
-    const matchQuality = isHighlyRelevant ? 'HIGHLY RELEVANT' : isModeratelyRelevant ? 'POTENTIALLY RELATED' : 'SIMILAR PATTERN';
-    
-    let formattedResponse = '';
-
-    // Professional Incident Report Header
-    formattedResponse += `🚨 **Incident Report: ${topResult.title}**\n\n`;
-    formattedResponse += `> **Status**: ✅ Resolved  \n`;
-    formattedResponse += `> **Priority**: ${priority}  \n`;
-    formattedResponse += `> **Match Quality**: ${matchQuality} (${(topResult.score * 100).toFixed(1)}%)  \n`;
-    formattedResponse += `> **Issue ID**: [${topResult.id}](${topResult.id})  \n`;
-    if (topResult.tags && topResult.tags.length > 0) {
-      formattedResponse += `> **Tags**: ${topResult.tags.map(tag => `\`${tag}\``).join(' · ')}  \n`;
-    }
-    formattedResponse += `\n---\n\n`;
-
-    // Problem Summary Section
-    formattedResponse += `## 📌 Problem Summary\n\n`;
-    if (topResult.description) {
-      // Handle embedded numbered/lettered lists and split properly
-      let description = topResult.description;
-      
-      // Split on patterns like "1)", "2)", "a)", "b)", etc.
-      const listPattern = /(\d+\)|[a-z]\))/gi;
-      const parts = description.split(listPattern).filter(part => part.trim().length > 0);
-      
-      if (parts.length > 2) {
-        // Has embedded lists, process them
-        parts.forEach(part => {
-          const trimmedPart = part.trim();
-          if (trimmedPart && !listPattern.test(trimmedPart)) {
-            // Split further on commas and periods for better granularity
-            const subParts = trimmedPart.split(/[,.]+/).filter(sub => sub.trim().length > 10);
-            subParts.forEach(subPart => {
-              const cleanPart = subPart.trim().replace(/^(and|or|also)\s+/i, '');
-              if (cleanPart.length > 5) {
-                formattedResponse += `→ ${cleanPart}\n`;
-              }
-            });
-          }
-        });
-      } else {
-        // No embedded lists, split on sentences
-        const descriptionLines = description.split(/[.!?]+/).filter(line => line.trim().length > 0);
-        descriptionLines.forEach(line => {
-          const trimmedLine = line.trim();
-          if (trimmedLine.length > 0) {
-            formattedResponse += `→ ${trimmedLine}\n`;
-          }
-        });
-      }
-    }
-    formattedResponse += `\n`;
-
-    // Resolution Steps Section
-    if (topResult.resolution) {
-      formattedResponse += `## 🛠️ Resolution Steps\n\n`;
-      formattedResponse += `**Coordinated fix implemented:**\n\n`;
-      
-      let resolution = topResult.resolution;
-      
-      // Handle embedded numbered lists in resolution
-      const listPattern = /(\d+\)|[a-z]\))/gi;
-      const parts = resolution.split(listPattern).filter(part => part.trim().length > 0);
-      
-      if (parts.length > 2) {
-        // Has embedded lists, process them as numbered steps
-        let stepCounter = 1;
-        parts.forEach(part => {
-          const trimmedPart = part.trim();
-          if (trimmedPart && !listPattern.test(trimmedPart)) {
-            // Split further on commas for better granularity
-            const subParts = trimmedPart.split(/,(?=\s*[A-Z])/g).filter(sub => sub.trim().length > 10);
-            subParts.forEach(subPart => {
-              const cleanPart = subPart.trim().replace(/^(and|or|also)\s+/i, '').replace(/,$/, '');
-              if (cleanPart.length > 5) {
-                formattedResponse += `${stepCounter}. ${cleanPart}\n`;
-                stepCounter++;
-              }
-            });
-          }
-        });
-      } else {
-        // No embedded lists, split on sentences
-        const resolutionLines = resolution.split(/[.!?]+/).filter(line => line.trim().length > 0);
-        resolutionLines.forEach((line, index) => {
-          const trimmedLine = line.trim();
-          if (trimmedLine.length > 0) {
-            formattedResponse += `${index + 1}. ${trimmedLine}\n`;
-          }
-        });
-      }
-      formattedResponse += `\n`;
-    }
-
-    // AI-Powered Fix Suggestion (Highlighted Callout)
-    if (topResult.ai_suggestion) {
-      formattedResponse += `## 💡 AI-Powered Fix Suggestion\n\n`;
-      formattedResponse += `> **🎯 Immediate Action Required:**  \n`;
-      formattedResponse += `> ${topResult.ai_suggestion}\n\n`;
-    }
-
-    // Resolved By Section (Email Display)
-    if (topResult.resolved_by) {
-      formattedResponse += `## 👥 Resolved By\n\n`;
-      
-      let resolvers = [];
-      
-      // Handle different formats of resolved_by data
-      if (Array.isArray(topResult.resolved_by)) {
-        resolvers = topResult.resolved_by;
-      } else if (typeof topResult.resolved_by === 'string') {
-        // Handle string that might contain array-like format
-        const cleanString = topResult.resolved_by.replace(/[\[\]']/g, '');
-        if (cleanString.includes(',')) {
-          resolvers = cleanString.split(',').map(r => r.trim());
-        } else {
-          resolvers = [cleanString.trim()];
-        }
-      }
-      
-      // Process each resolver - display only email addresses
-      resolvers.forEach((resolver, index) => {
-        const cleanResolver = resolver.trim();
-        
-        // Check if it's already an email format
-        if (cleanResolver.includes('@')) {
-          formattedResponse += `📧 ${cleanResolver}`;
-        } else {
-          // Convert name format to email format (e.g., "ankit.jha" -> "ankit.jha@juspay.in")
-          const emailAddress = cleanResolver.includes('.') ? 
-            `${cleanResolver}@juspay.in` : 
-            `${cleanResolver}@juspay.in`;
-          formattedResponse += `📧 ${emailAddress}`;
-        }
-        
-        if (index < resolvers.length - 1) {
-          formattedResponse += `\n`;
-        }
-      });
-      formattedResponse += `\n\n`;
-    }
-
-    // Additional Similar Issues
-    if (response.results.length > 1) {
-      const additionalIssues = response.results.slice(1, 3); // Show top 2 additional
-      formattedResponse += `## 📚 Related Incidents\n\n`;
-      additionalIssues.forEach((issue, index) => {
-        formattedResponse += `**${index + 2}.** [${issue.title}](${issue.id}) (${(issue.score * 100).toFixed(1)}% match)\n`;
-      });
-      formattedResponse += `\n`;
-    }
-
-    // Impact Metrics Section - Enhanced with incident-specific data
-    formattedResponse += `## 📈 Impact Metrics\n\n`;
-    
-    // Calculate incident-specific metrics based on the issue data
-    const issueDate = new Date(topResult.created_at);
-    const daysSinceIssue = Math.floor((new Date().getTime() - issueDate.getTime()) / (1000 * 3600 * 24));
-    const estimatedResolutionTime = isHighlyRelevant ? '15 minutes' : isModeratelyRelevant ? '45 minutes' : '2 hours';
-    const previousResolutionTime = topResult.tags?.includes('Critical') ? '4-6 hours' : 
-                                  topResult.tags?.includes('High') ? '2-4 hours' : '1-2 hours';
-    
-    // Determine impact category based on tags and content
-    const isPaymentIssue = topResult.tags?.some(tag => 
-      ['UPI', 'Payment', 'Transaction', 'Gateway', 'Wallet'].includes(tag)
-    ) || topResult.title.toLowerCase().includes('payment');
-    
-    const isAPIIssue = topResult.tags?.some(tag => 
-      ['API', 'Timeout', 'Connection', 'HTTP'].includes(tag)
-    ) || topResult.title.toLowerCase().includes('api');
-    
-    formattedResponse += `| Metric | Before Fix | After Fix |\n`;
-    formattedResponse += `|--------|------------|----------|\n`;
-    
-    if (isPaymentIssue) {
-      formattedResponse += `| Resolution Time | ${previousResolutionTime} | **${estimatedResolutionTime}** |\n`;
-      formattedResponse += `| Payment Success Rate | 85-90% | **99.5%** |\n`;
-      formattedResponse += `| Customer Impact | High | **Minimal** |\n`;
-    } else if (isAPIIssue) {
-      formattedResponse += `| Resolution Time | ${previousResolutionTime} | **${estimatedResolutionTime}** |\n`;
-      formattedResponse += `| API Response Time | Degraded | **Optimized** |\n`;
-      formattedResponse += `| Service Availability | 95% | **99.9%** |\n`;
-    } else {
-      formattedResponse += `| Resolution Time | ${previousResolutionTime} | **${estimatedResolutionTime}** |\n`;
-      formattedResponse += `| System Stability | Intermittent | **Stable** |\n`;
-      formattedResponse += `| Team Coordination | Manual | **Automated Alerts** |\n`;
-    }
-    
-    formattedResponse += `| Knowledge Sharing | Tribal Knowledge | **Documented Solution** |\n`;
-    formattedResponse += `| Future Prevention | Reactive | **Proactive Monitoring** |\n\n`;
-    
-    // Add incident timeline if available
-    if (daysSinceIssue > 0) {
-      formattedResponse += `**📅 Incident Timeline:**\n`;
-      formattedResponse += `→ Original incident occurred ${daysSinceIssue} days ago\n`;
-      formattedResponse += `→ Solution now available in FixGenie knowledge base\n`;
-      formattedResponse += `→ Similar issues can be resolved ${Math.floor(daysSinceIssue / 7) > 0 ? 
-        `${Math.floor(daysSinceIssue / 7)} weeks` : `${daysSinceIssue} days`} faster\n\n`;
-    }
-
-    // Lessons Learned Section
-    formattedResponse += `## 🧩 Lessons Learned & Prevention\n\n`;
-    formattedResponse += `**✅ Key Takeaways:**\n`;
-    formattedResponse += `→ Similar issues can be resolved using proven patterns\n`;
-    formattedResponse += `→ Historical knowledge accelerates incident resolution\n`;
-    formattedResponse += `→ AI-powered search reduces dependency on individual expertise\n\n`;
-    
-    formattedResponse += `**🔄 Prevention Protocol:**\n`;
-    formattedResponse += `→ Document all resolutions in FixGenie knowledge base\n`;
-    formattedResponse += `→ Tag incidents with relevant keywords for better searchability\n`;
-    formattedResponse += `→ Regular knowledge base updates and validation\n\n`;
-
-    // Footer with FixGenie branding
-    formattedResponse += `---\n\n`;
-    formattedResponse += `✨ **This incident is now part of FixGenie's knowledge base.** Next time someone encounters a similar issue, this solution will auto-surface.\n\n`;
-    formattedResponse += `🔍 *Search completed in ${response.execution_time_ms.toFixed(0)}ms using ${response.search_type} search*`;
-    
+    // Legacy format - shouldn't be used anymore but kept for compatibility
     return {
-      content: formattedResponse,
-      results: response.results
+      content: "Legacy search format detected. Please use RAG endpoint.",
+      results: response.results || []
     };
   };
 
   const isGreeting = (text: string): boolean => {
     const greetings = ['hi', 'hii', 'hello', 'hey', 'hola', 'good morning', 'good afternoon', 'good evening'];
     const normalizedText = text.toLowerCase().trim();
-    return greetings.some(greeting => 
+    
+    // Check if it's ONLY a greeting (not a greeting followed by technical content)
+    const isOnlyGreeting = greetings.some(greeting => 
       normalizedText === greeting || 
-      normalizedText.startsWith(greeting + ' ') ||
-      normalizedText.endsWith(' ' + greeting)
+      normalizedText === greeting + '!' ||
+      normalizedText === greeting + '.'
     );
+    
+    // If it starts with a greeting but has technical keywords, treat as technical
+    const hasTechnicalContent = normalizedText.includes('error') || 
+                               normalizedText.includes('issue') || 
+                               normalizedText.includes('problem') ||
+                               normalizedText.includes('failed') ||
+                               normalizedText.includes('timeout') ||
+                               normalizedText.includes('gateway') ||
+                               normalizedText.includes('api') ||
+                               normalizedText.includes('payment') ||
+                               normalizedText.includes('debug') ||
+                               normalizedText.includes('help me') ||
+                               normalizedText.includes('solve') ||
+                               normalizedText.includes('merchant') ||
+                               normalizedText.includes('integration') ||
+                               normalizedText.includes('integrating') ||
+                               normalizedText.includes('blocked') ||
+                               normalizedText.includes('testing') ||
+                               normalizedText.includes('server_error') ||
+                               normalizedText.includes('internal_server_error') ||
+                               normalizedText.includes('pinelabs') ||
+                               normalizedText.includes('snapdeal') ||
+                               normalizedText.includes('/txns') ||
+                               normalizedText.includes('logs');
+    
+    // Debug logging
+    console.log('isGreeting Debug:', {
+      text: text.substring(0, 50) + '...',
+      isOnlyGreeting,
+      hasTechnicalContent,
+      result: isOnlyGreeting && !hasTechnicalContent
+    });
+    
+    return isOnlyGreeting && !hasTechnicalContent;
   };
 
   const isCapabilityQuery = (text: string): boolean => {
@@ -612,14 +753,64 @@ const App: React.FC = () => {
     return capabilityKeywords.some(keyword => normalizedText.includes(keyword));
   };
 
+  const isIncidentID = (text: string): boolean => {
+    // FIXED: Check if text CONTAINS an incident ID, not just exact match
+    const idPatterns = [
+      /\bJSP-\d+\b/i,           // JSP-1046 anywhere in text
+      /\bJIRA-\d+\b/i,          // JIRA-1234 anywhere in text
+      /\bINC-\d+\b/i,           // INC-5678 anywhere in text
+      /\bSLACK-\d+-\d+\b/i,     // SLACK-timestamp-id anywhere in text
+      /\bTICKET-\d+\b/i,        // TICKET-1234 anywhere in text
+      /\bBUG-\d+\b/i,           // BUG-5678 anywhere in text
+      /\bISSUE-\d+\b/i          // ISSUE-9999 anywhere in text
+    ];
+    
+    const trimmedText = text.trim();
+    return idPatterns.some(pattern => pattern.test(trimmedText));
+  };
+
+  const extractIncidentID = (text: string): string | null => {
+    // Extract the actual incident ID from text
+    const idPatterns = [
+      /\b(JSP-\d+)\b/i,
+      /\b(JIRA-\d+)\b/i,
+      /\b(INC-\d+)\b/i,
+      /\b(SLACK-\d+-\d+)\b/i,
+      /\b(TICKET-\d+)\b/i,
+      /\b(BUG-\d+)\b/i,
+      /\b(ISSUE-\d+)\b/i
+    ];
+    
+    for (const pattern of idPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
   const isTechnicalQuery = (text: string): boolean => {
+    // First check if it's an incident ID - these are always technical
+    if (isIncidentID(text)) {
+      return true;
+    }
+    
     const technicalKeywords = [
       'error', 'failed', 'failure', 'timeout', 'api', 'database', 'server', 'connection',
       'payment', 'upi', 'webhook', 'authentication', 'authorization', 'ssl', 'tls',
       'bug', 'issue', 'problem', 'broken', 'not working', 'crash', 'exception',
       'latency', 'performance', 'slow', 'down', 'outage', 'service', 'endpoint',
       'response', 'request', 'http', 'https', 'json', 'xml', 'sql', 'query',
-      'deploy', 'deployment', 'build', 'compile', 'config', 'configuration'
+      'deploy', 'deployment', 'build', 'compile', 'config', 'configuration',
+      // Payment gateway and transaction specific terms
+      'gateway', 'transaction', 'transactions', 'pg', 'hyper', 'authorizing', 'stuck',
+      'processing', 'pending', 'declined', 'refund', 'settlement', 'capture', 'void',
+      'merchant', 'order', 'status', 'sync', 'callback', 'notification', 'integration',
+      'pinelabs', 'razorpay', 'payu', 'billdesk', 'ccavenue', 'easebuzz', 'cybersource',
+      'hdfc', 'axis', 'icici', 'sbi', 'kotak', 'card', 'debit', 'credit', 'netbanking',
+      'wallet', 'mobikwik', 'paytm', 'phonepe', 'gpay', 'amazonpay', 'freecharge'
     ];
     
     const normalizedText = text.toLowerCase();
@@ -780,8 +971,85 @@ const App: React.FC = () => {
         return;
       }
 
-      // Check if it's a capability query
-      if (isCapabilityQuery(queryText)) {
+      // CRITICAL FIX: Check for incident ID FIRST before capability queries
+      if (isIncidentID(queryText)) {
+        console.log('Incident ID detected:', queryText);
+        
+        // Show immediate feedback for ID search
+        setMessages(prev => {
+          const newMessages = prev.filter(msg => !msg.isTyping);
+          return [...newMessages, {
+            id: (Date.now() + 1.5).toString(),
+            type: 'assistant',
+            content: `🔍 **Searching for incident ${queryText.toUpperCase()}...**\n\nLooking up exact incident details...`,
+            timestamp: new Date(),
+            isTyping: true
+          }];
+        });
+        
+        // Try exact ID search first with hybrid search (which has better ID matching)
+        try {
+          const idResponse = await fetch('http://localhost:8000/api/v1/search/hybrid', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: queryText,
+              top_k: 5,
+              min_score: 0.1  // Lower threshold for ID searches
+            }),
+          });
+
+          if (idResponse.ok) {
+            const idSearchResult = await idResponse.json();
+            
+            // Check if we found an exact ID match
+            const exactMatch = idSearchResult.results?.find((result: SearchResult) => 
+              result.id.toLowerCase() === extractIncidentID(queryText)?.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              // Format as direct ID result
+              const directIdContent = `🎯 **INCIDENT FOUND** - ${exactMatch.id}\n${'━'.repeat(50)}\n\n📋 **${exactMatch.title}**\n\n**Problem Description:**\n${exactMatch.description}\n\n🔧 **Resolution:**\n${exactMatch.resolution}\n\n👨‍💻 **Resolved by:** ${exactMatch.resolved_by || 'Unknown'}\n📅 **Date:** ${exactMatch.created_at}\n\n🏷️ **Tags:** ${exactMatch.tags?.map(tag => `\`${tag}\``).join(' • ') || 'None'}\n\n---\n⚡ *Direct ID lookup completed instantly*`;
+              
+              // Remove typing message and show direct result
+              setMessages(prev => {
+                const newMessages = prev.filter(msg => !msg.isTyping);
+                return [...newMessages, {
+                  id: (Date.now() + 2).toString(),
+                  type: 'assistant',
+                  content: directIdContent,
+                  timestamp: new Date(),
+                  searchResults: [exactMatch],
+                  searchQuery: queryText
+                }];
+              });
+              
+              setConnectionStatus('online');
+              setRetryCount(0);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('ID search error:', error);
+        }
+        
+        // If exact ID not found, show helpful message and fall through to RAG search
+        setMessages(prev => {
+          const newMessages = prev.filter(msg => !msg.isTyping);
+          return [...newMessages, {
+            id: (Date.now() + 1.8).toString(),
+            type: 'assistant',
+            content: `❌ **Incident ${extractIncidentID(queryText)?.toUpperCase()} not found**\n\nSearching for similar incidents...`,
+            timestamp: new Date(),
+            isTyping: true
+          }];
+        });
+      }
+
+      // Check if it's a capability query (AFTER ticket ID check)
+      if (isCapabilityQuery(queryText) && !isIncidentID(queryText)) {
         try {
           const capResponse = await fetch('http://localhost:8000/api/v1/search/capabilities');
           if (capResponse.ok) {
@@ -835,16 +1103,94 @@ const App: React.FC = () => {
         return;
       }
 
-      // Proceed with technical search
-      const response = await fetch('http://localhost:8000/api/v1/search', {
+      // Continue with RAG search for non-ID technical queries
+      if (!isIncidentID(queryText)) {
+        console.log('Incident ID detected:', queryText);
+        
+        // Show immediate feedback for ID search
+        setMessages(prev => {
+          const newMessages = prev.filter(msg => !msg.isTyping);
+          return [...newMessages, {
+            id: (Date.now() + 1.5).toString(),
+            type: 'assistant',
+            content: `🔍 **Searching for incident ${queryText.toUpperCase()}...**\n\nLooking up exact incident details...`,
+            timestamp: new Date(),
+            isTyping: true
+          }];
+        });
+        
+        // Try exact ID search first with hybrid search (which has better ID matching)
+        try {
+          const idResponse = await fetch('http://localhost:8000/api/v1/search/hybrid', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: queryText,
+              top_k: 5,
+              min_score: 0.1  // Lower threshold for ID searches
+            }),
+          });
+
+          if (idResponse.ok) {
+            const idSearchResult = await idResponse.json();
+            
+            // Check if we found an exact ID match
+            const exactMatch = idSearchResult.results?.find((result: SearchResult) => 
+              result.id.toLowerCase() === queryText.toLowerCase()
+            );
+            
+            if (exactMatch) {
+              // Format as direct ID result
+              const directIdContent = `🎯 **INCIDENT FOUND** - ${exactMatch.id}\n${'━'.repeat(50)}\n\n📋 **${exactMatch.title}**\n\n**Problem Description:**\n${exactMatch.description}\n\n🔧 **Resolution:**\n${exactMatch.resolution}\n\n👨‍💻 **Resolved by:** ${exactMatch.resolved_by || 'Unknown'}\n📅 **Date:** ${exactMatch.created_at}\n\n🏷️ **Tags:** ${exactMatch.tags?.map(tag => `\`${tag}\``).join(' • ') || 'None'}\n\n---\n⚡ *Direct ID lookup completed instantly*`;
+              
+              // Remove typing message and show direct result
+              setMessages(prev => {
+                const newMessages = prev.filter(msg => !msg.isTyping);
+                return [...newMessages, {
+                  id: (Date.now() + 2).toString(),
+                  type: 'assistant',
+                  content: directIdContent,
+                  timestamp: new Date(),
+                  searchResults: [exactMatch],
+                  searchQuery: queryText
+                }];
+              });
+              
+              setConnectionStatus('online');
+              setRetryCount(0);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('ID search error:', error);
+        }
+        
+        // If exact ID not found, show helpful message and fall through to RAG search
+        setMessages(prev => {
+          const newMessages = prev.filter(msg => !msg.isTyping);
+          return [...newMessages, {
+            id: (Date.now() + 1.8).toString(),
+            type: 'assistant',
+            content: `❌ **Incident ${queryText.toUpperCase()} not found**\n\nSearching for similar incidents...`,
+            timestamp: new Date(),
+            isTyping: true
+          }];
+        });
+      }
+
+      // Proceed with RAG search (Retrieval-Augmented Generation)
+      const response = await fetch('http://localhost:8000/api/v1/rag/query', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: queryText,
-          top_k: 3,
-          search_type: 'semantic'
+          include_sources: true,
+          max_incidents: 3,
+          confidence_threshold: isIncidentID(queryText) ? 0.1 : 0.3  // Lower threshold for ID searches
         }),
       });
 

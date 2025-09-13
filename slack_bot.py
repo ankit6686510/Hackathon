@@ -94,10 +94,10 @@ def handle_SherlockAI(ack, respond, command):
 
 
 # Keep the old command for backward compatibility but redirect to new one
-@app.command("/fixgenie")
-def handle_fixgenie_legacy(ack, respond, command):
+@app.command("/SherlockAI")
+def handle_SherlockAI_legacy(ack, respond, command):
 	ack()
-	respond("🔄 *Command Updated!*\n\nPlease use `/SherlockAI` instead of `/fixgenie`\n\n*SherlockAI* is now specialized for payment-related issues only.\n\nUsage: `/SherlockAI <payment issue description>`")
+	respond("🔄 *Command Updated!*\n\nPlease use `/SherlockAI` instead of `/SherlockAI`\n\n*SherlockAI* is now specialized for payment-related issues only.\n\nUsage: `/SherlockAI <payment issue description>`")
 
 
 def main():

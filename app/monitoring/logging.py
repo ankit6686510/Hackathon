@@ -1,5 +1,5 @@
 """
-Enhanced logging middleware and utilities for FixGenie
+Enhanced logging middleware and utilities for SherlockAI
 """
 
 import time
@@ -385,7 +385,7 @@ def setup_log_rotation():
     
     # Create rotating file handler for application logs
     app_handler = logging.handlers.RotatingFileHandler(
-        "logs/fixgenie.log",
+        "logs/SherlockAI.log",
         maxBytes=100 * 1024 * 1024,  # 100MB
         backupCount=10
     )

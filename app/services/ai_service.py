@@ -295,7 +295,7 @@ class AIService:
             'hdfc', 'icici', 'axis', 'sbi', 'kotak', 'yes bank', 'pnb', 'citi', 'hsbc',
             'paytm', 'phonepe', 'gpay', 'amazon pay', 'mobikwik', 'freecharge',
             'razorpay', 'stripe', 'paypal', 'cashfree', 'payu', 'ccavenue', '2c2p',
-            'irctc', 'juspay',  # Major payment merchants and processors
+            'irctc', 'juspay', 'pinelabs', 'pinelabs_online', 'snapdeal',  # Major payment merchants and processors
             
             # E-commerce merchants and companies
             'firstcry', 'bigbasket', 'flipkart', 'amazon', 'myntra', 'nykaa', 
@@ -345,11 +345,11 @@ class AIService:
         # Calculate total score
         total_score = payment_score + phrase_score + (3 if bank_code_found else 0)
         
-        # Determine if it's payment related (lowered threshold)
-        is_payment_related = total_score > 0
+        # Determine if it's payment related (lowered threshold even more)
+        is_payment_related = total_score >= 1  # Changed from > 0 to >= 1 for more reliability
         
         # Calculate confidence (improved scoring)
-        confidence = min(total_score * 0.15, 1.0)  # Max confidence of 1.0
+        confidence = min(total_score * 0.12, 1.0)  # Slightly adjusted for better scaling
         
         return {
             "is_payment_related": is_payment_related,

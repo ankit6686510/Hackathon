@@ -1,5 +1,5 @@
 """
-Monitoring and observability package for FixGenie
+Monitoring and observability package for SherlockAI
 """
 
 from .metrics import metrics_middleware, setup_metrics, metrics_endpoint

@@ -314,5 +314,1673 @@
     ],
     "created_at": "2024-08-25",
     "resolved_by": "ankit.jha@juspay.in"
+  },
+  {
+    "id": "JSP-1023",
+    "title": "Supermoneyrent Surcharge Calculation Order - Apply Surcharge Before Offers",
+    "description": "Supermoneyrent is integrating payment processing in Android and iOS using both surcharge and offers modules. They want to calculate surcharge before applying offers (surcharge on base amount) instead of the current flow where surcharge is calculated after applying offers. Current scenario: Amount=100, Offer=50%, Surcharge=2% → BASE(100) → OFFER(-50) → SURCHARGE(1 on remaining 50) → Final: 51. Expected scenario: BASE(100) → SURCHARGE(2 on base 100) → OFFER(-50 on base) → Final: 52. Business rationale: Supermoneyrent's business model earns margin solely on surcharge component since rent amount goes to landlord. They want to protect their margin while allowing customer discounts on rent component. Additional requirement: In order status txn_amount_breakup, show BASE amount breakdown using amount_info details (BASE, SURCHARGE) for merchants passing amount_info field. This is a critical project for Flipkart group merchant with aggressive launch timelines requiring cross-team coordination between PP, UI, SDK, Offers, Surcharge, FRM teams.",
+    "resolution": "Multi-step resolution implemented: 1) Merchant-side calculation approach: Asked Supermoney to compute surcharge upfront and pass surcharge amount in amount_info param instead of modifying core calculation order. 2) amount_info parameter usage: Merchant passes amount_info: {base_amount:100, add_on_amounts: [{name:surgecharge, amount:2}]}, system applies offer on surcharge amount passed in amount_info. Flow working: base=100, surcharge=2, offer=50% on surcharge=1, total=101. 3) UI display enhancement: Used payload params to display breakup amount on UI from amount_info details. 4) Order status enhancement: For merchants passing amount_info field, pick amount_info details and show corresponding values (BASE, SURCHARGE) in txn_amount_breakup instead of consolidated transaction amount. 5) Alternative solutions discussed: Option 1 - Convince merchant to consume from metadata (amount_info already available), Option 2 - Add amount_info as further split under BASE in txn_amount_breakup. 6) Cross-team coordination: Aligned PP, UI, SDK, Offers, Surcharge, FRM teams for this critical Flipkart group merchant integration. Note: This approach maintains existing core calculation logic while providing merchant flexibility through amount_info parameter.",
+    "tags": [
+      "Surcharge",
+      "Offers",
+      "Payment-Processing",
+      "Supermoneyrent",
+      "Flipkart-Group",
+      "amount_info",
+      "txn_amount_breakup",
+      "Business-Logic",
+      "Cross-team",
+      "Integration",
+      "Android",
+      "iOS",
+      "Order-Status",
+      "UI-Display",
+      "Merchant-Configuration"
+    ],
+    "created_at": "2024-09-01",
+    "resolved_by": "priyanga.kandasamy@juspay.in"
+  },
+  {
+  "id": "JSP-1024",
+  "title": "CCAvenue Webhook Decryption Failure - Working Key Mismatch Issue",
+  "description": "CCAvenue webhook response for Order ID OB-1550708 was rejected due to decryption failure at 11:17. The order status was 'Aborted' from CCA but webhook could not be processed, requiring manual sync at 11:57 to move order to failed state. This affected a high-priority TVS President order worth ₹5001. Investigation revealed that CCAvenue is inconsistently using Working Key 1 and Working Key 2 for encryption, but only Working Key 1 is configured in Juspay dashboard, causing decryption failures for webhooks encrypted with Working Key 2. Multiple webhooks for this merchant-gateway combination are being rejected due to the same issue.",
+  "root_cause": "CCAvenue gateway is inconsistently encrypting webhook payloads using two different working keys (Working Key 1 and Working Key 2), but Juspay dashboard only has Working Key 1 configured. When CCAvenue encrypts using Working Key 2, the decryption fails at Juspay's end, causing webhook rejection.",
+  "fix_applied": "Investigation initiated with CCAvenue to understand their working key usage pattern. Need to configure Working Key 2 in Juspay dashboard or establish consistent working key usage with CCAvenue.",
+  "error_patterns": [
+    {
+      "code": "DECRYPTION_FAILURE",
+      "message": "Webhook decryption failed - working key mismatch"
+    },
+    {
+      "pattern": "order_status: Aborted",
+      "context": "CCAvenue webhook payload"
+    },
+    {
+      "pattern": "Multiple webhook rejections for merchant-gateway combination",
+      "frequency": "High"
+    }
+  ],
+  "systems_involved": [
+    "CCAvenue Payment Gateway",
+    "Juspay Webhook Processing System",
+    "Juspay Dashboard Configuration",
+    "OpenSearch Logging System",
+    "Merchant Dashboard (Manual Sync)"
+  ],
+  "tags": [
+    "Webhooks",
+    "CCAvenue",
+    "Decryption-Failure",
+    "Working-Key",
+    "Configuration",
+    "High-Priority",
+    "TVS",
+    "Manual-Sync",
+    "Gateway-Integration",
+    "Encryption",
+    "Order-Status",
+    "Payment-Gateway"
+  ],
+  "ai_suggestion": "Immediate action required: 1) Configure Working Key 2 in Juspay dashboard for CCAvenue integration, 2) Coordinate with CCAvenue to establish consistent working key usage pattern, 3) Implement fallback decryption logic to try both working keys, 4) Add monitoring alerts for webhook decryption failures, 5) For high-priority merchants like TVS, implement real-time webhook failure notifications to prevent manual sync delays.",
+  "created_at": "2025-09-01",
+  "resolved_by": "yashasvi.rana@juspay.in",
+  "priority": "high",
+  "merchant_impact": "TVS President order affected",
+  "order_details": {
+    "order_id": "OB-1550708",
+    "amount": 5001.00,
+    "currency": "INR",
+    "payment_method": "MasterCard",
+    "gateway": "CCAvenue",
+    "bank": "ICICI"
   }
+},
+{
+  "id": "JSP-1025",
+  "title": "JIOPAY Gateway Bank Code Configuration Mismatch - Sandbox vs Production Environment",
+  "description": "Merchant Ajio testing JIOPAY gateway in sandbox environment encountered error 'paymentOptionCodes is not correct' (P1006) for HDFC Net Banking transactions. Investigation revealed discrepancy between sandbox and production configurations where sandbox was using numeric codes ('1003') while production uses bank name codes ('HDFC'). Issue extended to multiple banks including HDFC, KOTAK MAHINDRA, and AXIS. Root cause was incomplete gateway payment method (GPM) configuration in sandbox environment - old codes from 2 years ago were present but current production codes were missing. Additional complexity discovered with Kotak bank having different codes for corporate vs non-corporate accounts in production but unified code in UAT.",
+  "root_cause": "Sandbox environment had outdated JIOPAY gateway payment method codes that didn't match current production configuration. Production GPM entries were not synchronized to sandbox, causing paymentOptionCodes validation failures. Legacy codes from 2 years ago were still present but current bank codes were missing.",
+  "fix_applied": "1) Added all current production GPM entries to sandbox environment for JIOPAY gateway, 2) Configured HDFC, KOTAK MAHINDRA (KKBK), and AXIS bank codes in sandbox, 3) Cleaned up old/legacy gateway codes, 4) Coordinated with JIOPAY team to confirm UAT bank code specifications, 5) Updated Kotak bank code configuration based on JIOPAY team feedback for UAT environment.",
+  "error_patterns": [
+    {
+      "code": "P1006",
+      "message": "paymentOptionCodes is not correct"
+    },
+    {
+      "pattern": "Sandbox using numeric codes vs production using bank name codes",
+      "example": "Sandbox: '1003' vs Production: 'HDFC'"
+    },
+    {
+      "pattern": "Juspay Declined for configured bank codes",
+      "context": "After configuration, some transactions still failing"
+    }
+  ],
+  "systems_involved": [
+    "JIOPAY Payment Gateway",
+    "Juspay Sandbox Environment", 
+    "Juspay Production Environment",
+    "Gateway Payment Method (GPM) Configuration",
+    "Juspay Dashboard",
+    "Net Banking Integration"
+  ],
+  "tags": [
+    "JIOPAY",
+    "Gateway-Configuration",
+    "Bank-Codes",
+    "Sandbox",
+    "Production",
+    "GPM",
+    "Net-Banking",
+    "HDFC",
+    "KOTAK",
+    "AXIS",
+    "paymentOptionCodes",
+    "Environment-Sync",
+    "Testing",
+    "Ajio"
+  ],
+  "ai_suggestion": "Implement automated synchronization process between production and sandbox GPM configurations to prevent such mismatches. Establish regular audits of gateway configurations across environments. For JIOPAY specifically: 1) Maintain updated documentation of bank codes for UAT vs Production, 2) Implement validation checks during merchant testing phase, 3) Create environment-specific configuration management, 4) Set up monitoring for paymentOptionCodes validation failures, 5) Establish direct communication channel with gateway teams for quick resolution of configuration issues.",
+  "created_at": "2025-09-01",
+  "resolved_by": ["advait.mahesh@juspay.in", "sasankh.varma@juspay.in"],
+  "priority": "medium",
+  "merchant_impact": "Ajio unable to complete JIOPAY gateway testing for multiple bank options",
+  "environment": "sandbox",
+  "gateway_details": {
+    "gateway": "JIOPAY",
+    "payment_mode": "Net Banking",
+    "affected_banks": ["HDFC", "KOTAK MAHINDRA", "AXIS"],
+    "merchant_id_sandbox": "JP2001100060805",
+    "merchant_id_production": "JP2000000000500"
+  },
+  "timeline": {
+    "issue_reported": "2025-09-01 17:16",
+    "investigation_started": "2025-09-01 17:25", 
+    "configuration_updated": "2025-09-01 20:11",
+    "additional_config": "2025-09-04 12:35",
+    "testing_pending": "2025-09-04 12:43"
+  }
+},
+{
+  "id": "JSP-1026",
+  "title": "Dynamic Currency Conversion (DCC) Flow Implementation for Dummy PG Testing",
+  "description": "Request to enable Dynamic Currency Conversion (DCC) flow for Dummy PG to replicate production DCC functionality for testing purposes. Currently, all DCC transactions are routed to CyberSource in production, but testing teams need the ability to test DCC flow without using real payment gateways. The implementation requires: 1) DCC flag configuration in Dummy PG, 2) International card detection logic, 3) Multi-TID flow support with DYNAMIC_CURRENCY_CONVERSION payment method enforcement, 4) Dummy exchange rate provider integration, 5) DCC UI display for currency selection, 6) Complete transaction flow from card BIN entry to payment completion. The solution needs to maintain the same user experience as production while using dummy/mock services for exchange rates instead of Planet Pay.",
+  "root_cause": "Lack of DCC testing capability in non-production environments. All DCC transactions currently route to CyberSource in production, making it difficult to test DCC flows, currency conversion logic, and UI components without affecting live transactions or incurring real gateway costs.",
+  "fix_applied": "Implementation planned for sandbox environment with delivery target of September 25th. Solution includes: 1) Adding DCC configuration flag to Dummy PG settings, 2) Implementing international card detection logic, 3) Creating dummy exchange rate provider as alternative to Planet Pay, 4) Ensuring DCC UI components render correctly in test environment, 5) Supporting multi-TID flow with proper payment method enforcement, 6) Maintaining complete transaction flow including OTP and payment completion steps.",
+  "error_patterns": [
+    {
+      "pattern": "DCC transactions only available in production",
+      "impact": "Limited testing capabilities"
+    },
+    {
+      "pattern": "No dummy exchange rate provider",
+      "impact": "Cannot test currency conversion logic"
+    },
+    {
+      "pattern": "Missing DCC UI in test environments",
+      "impact": "Cannot validate user experience"
+    }
+  ],
+  "systems_involved": [
+    "Dummy Payment Gateway",
+    "Dynamic Currency Conversion (DCC) System",
+    "CyberSource Gateway",
+    "Planet Pay Exchange Rate Provider",
+    "Multi-TID Flow System",
+    "DCC UI Components",
+    "International Card Detection",
+    "Sandbox Environment",
+    "PGCC (Payment Gateway Configuration)"
+  ],
+  "tags": [
+    "DCC",
+    "Dynamic-Currency-Conversion",
+    "Dummy-PG",
+    "Testing",
+    "International-Cards",
+    "Exchange-Rates",
+    "Multi-TID",
+    "CyberSource",
+    "Planet-Pay",
+    "Sandbox",
+    "UI-Testing",
+    "Currency-Selection",
+    "Payment-Flow",
+    "Configuration"
+  ],
+  "ai_suggestion": "For future DCC implementations: 1) Create standardized DCC testing framework that can be easily replicated across different payment gateways, 2) Implement configurable exchange rate providers with both real and mock options, 3) Develop comprehensive DCC test scenarios covering various international card types and currencies, 4) Create automated testing for DCC UI components and user flows, 5) Establish DCC configuration templates for quick setup in new environments, 6) Implement monitoring and logging for DCC transaction flows to aid in debugging and optimization.",
+  "created_at": "2025-09-01",
+  "resolved_by": ["aklank@juspay.in", "aniket@juspay.in"],
+  "priority": "medium",
+  "project_type": "feature_implementation",
+  "delivery_timeline": {
+    "request_date": "2025-09-01",
+    "discussion_date": "2025-09-04",
+    "planned_delivery": "2025-09-25",
+    "environment": "sandbox"
+  },
+  "technical_requirements": {
+    "dcc_flag_configuration": true,
+    "international_card_detection": true,
+    "dummy_exchange_rates": true,
+    "dcc_ui_components": true,
+    "multi_tid_support": true,
+    "payment_method_enforcement": "DYNAMIC_CURRENCY_CONVERSION",
+    "complete_transaction_flow": true
+  },
+  "stakeholders": [
+    "pg-integrations team",
+    "Testing teams",
+    "UI/UX teams",
+    "Gateway configuration teams"
+  ]
+},
+{
+  "id": "JSP-1027",
+  "title": "IPG Gateway SSL Handshake Failure - Transaction Status Sync Issue",
+  "description": "Critical SSL handshake failure occurring when syncing transaction status with IPG (Integrated Payment Gateway) at endpoint https://www4.ipg-online.com/ipgapi/services. Error manifests as 'InternalException (HandshakeFailed (Error_Packet_unexpected \"Alert [(AlertLevel_Fatal, HandshakeFailure)]\" \" expected: change cipher\"))'. Issue is specific to merchant HPCL and has caused 0% success rate since August 13th. IPG team confirms they are sending valid responses, indicating the problem is on Juspay's side during SSL/TLS negotiation. Multiple sample orders affected including 26709195 and 26791622. The handshake failure prevents proper transaction status synchronization, impacting payment reconciliation and merchant operations.",
+  "root_cause": "SSL/TLS handshake failure during communication with IPG gateway endpoint. The error indicates a cipher suite mismatch or SSL configuration incompatibility between Juspay's client and IPG's server. Possible causes include: 1) Recent changes in SSL certificates or cipher configurations, 2) IPG server updated SSL/TLS requirements, 3) Client-side SSL library or configuration changes, 4) Network infrastructure changes affecting SSL negotiation.",
+  "fix_applied": "Investigation initiated with multiple teams: 1) JIRA ticket EUL-19070 created for debugging, 2) SRE team engaged to check for recent certificate or cipher changes, 3) KV team consulted to determine if issue affects other gateways, 4) Escalation to SRE oncall for infrastructure review. Root cause analysis ongoing to identify SSL configuration discrepancies.",
+  "error_patterns": [
+    {
+      "code": "HandshakeFailed",
+      "message": "Error_Packet_unexpected \"Alert [(AlertLevel_Fatal, HandshakeFailure)]\" \" expected: change cipher\""
+    },
+    {
+      "pattern": "SSL/TLS handshake failure",
+      "context": "IPG gateway communication"
+    },
+    {
+      "pattern": "0% success rate since August 13th",
+      "impact": "Complete transaction sync failure"
+    },
+    {
+      "pattern": "Merchant-specific issue (HPCL)",
+      "scope": "Single merchant affected"
+    }
+  ],
+  "systems_involved": [
+    "IPG Payment Gateway",
+    "SSL/TLS Communication Layer",
+    "Transaction Status Sync Service",
+    "Juspay Client SSL Configuration",
+    "Network Infrastructure",
+    "Certificate Management System",
+    "Merchant HPCL Integration"
+  ],
+  "tags": [
+    "IPG",
+    "SSL-Handshake",
+    "TLS",
+    "Certificate",
+    "Cipher-Suite",
+    "Transaction-Sync",
+    "HPCL",
+    "Gateway-Communication",
+    "Network-Security",
+    "Handshake-Failure",
+    "Success-Rate-Zero",
+    "Infrastructure",
+    "SRE"
+  ],
+  "ai_suggestion": "Immediate actions: 1) Check SSL certificate validity and expiration for IPG endpoint, 2) Verify cipher suite compatibility between client and server, 3) Test SSL handshake using openssl s_client to isolate the issue, 4) Review recent changes in SSL/TLS configuration or client libraries, 5) Implement SSL handshake retry logic with different cipher suites, 6) Add detailed SSL handshake logging for better debugging, 7) Consider implementing SSL configuration monitoring to detect future compatibility issues, 8) Establish direct communication channel with IPG technical team for SSL configuration coordination.",
+  "created_at": "2025-09-02",
+  "resolved_by": ["advait.mahesh@juspay.in", "sanket@juspay.in"],
+  "priority": "critical",
+  "merchant_impact": "HPCL merchant experiencing 0% transaction sync success rate",
+  "jira_ticket": "EUL-19070",
+  "affected_endpoint": "https://www4.ipg-online.com/ipgapi/services",
+  "timeline": {
+    "issue_start": "2025-08-13",
+    "issue_reported": "2025-09-02",
+    "investigation_started": "2025-09-02 14:30",
+    "jira_created": "2025-09-02 15:46",
+    "sre_escalation": "2025-09-04 14:15"
+  },
+  "sample_orders": [
+    "26709195",
+    "26791622"
+  ],
+  "technical_details": {
+    "error_type": "SSL/TLS Handshake Failure",
+    "expected_behavior": "Successful cipher negotiation",
+    "actual_behavior": "Fatal handshake failure with cipher expectation mismatch",
+    "gateway_response": "Valid response confirmed by IPG team",
+    "client_side_issue": true
+  }
+},
+{
+  "id": "JSP-1028",
+  "title": "Pinelabs Refund Sync 5xx Error Handling - Incorrect Failure Status Assignment",
+  "description": "Critical issue in refund sync flow where Pinelabs gateway returns 5xx response with generic error message 'An error has occurred.' causing refunds to be incorrectly marked as failed when they were actually processed successfully at the gateway. This leads to merchant confusion and potential duplicate refund attempts. In the reported case, merchant pharmeasytech's first refund (Unique request id: 17563953) was successfully processed at Pinelabs but marked as failed in Juspay system due to 5xx response. When merchant retried, subsequent attempts failed since full amount was already refunded. The generic error message prevents proper GSM rule creation for accurate status handling. For partial refunds, this could result in unintentional duplicate refunds being processed.",
+  "root_cause": "Inadequate error handling logic for 5xx responses during refund sync with Pinelabs gateway. The system treats all 5xx responses as definitive failures and updates refund status accordingly, without considering that 5xx errors are typically server-side issues that don't necessarily indicate transaction failure. The generic error message 'An error has occurred.' provides insufficient information to determine actual refund status.",
+  "fix_applied": "Updated refund sync flow to handle 5xx responses from Pinelabs by keeping refund status in 'Pending' instead of marking as 'Failed'. Changes deployed in api-txn service. Service configuration enabled to handle 5xx cases specifically for GW_REFUND_SYNC operations. This prevents premature failure marking and allows for proper status resolution through subsequent sync attempts or manual verification.",
+  "error_patterns": [
+    {
+      "code": "500",
+      "message": "An error has occurred.",
+      "gateway": "Pinelabs"
+    },
+    {
+      "pattern": "5xx response during refund sync",
+      "impact": "Refund incorrectly marked as failed"
+    },
+    {
+      "pattern": "Generic error message preventing GSM rule creation",
+      "context": "Unable to identify specific error scenarios"
+    },
+    {
+      "pattern": "Successful gateway processing with failed Juspay status",
+      "risk": "Merchant confusion and duplicate refund attempts"
+    }
+  ],
+  "systems_involved": [
+    "Pinelabs Payment Gateway",
+    "Juspay Refund Sync Service",
+    "Gateway State Machine (GSM)",
+    "API-TXN Service",
+    "Refund Status Management",
+    "Merchant Dashboard",
+    "Gateway Communication Layer"
+  ],
+  "tags": [
+    "Refund-Sync",
+    "Pinelabs",
+    "5xx-Error",
+    "Status-Handling",
+    "Gateway-Communication",
+    "Error-Handling",
+    "Duplicate-Refunds",
+    "GSM",
+    "API-TXN",
+    "Merchant-Impact",
+    "Status-Mismatch",
+    "Server-Error"
+  ],
+  "ai_suggestion": "Implement comprehensive error handling strategy for gateway communications: 1) Differentiate between definitive failures (4xx) and temporary issues (5xx), 2) Implement retry logic with exponential backoff for 5xx responses, 3) Add detailed logging for gateway response analysis, 4) Create specific GSM rules for different error patterns, 5) Implement status reconciliation jobs to verify actual gateway status, 6) Add merchant notifications for pending refunds requiring manual verification, 7) Consider implementing webhook-based status updates from gateways to reduce dependency on sync calls, 8) Establish monitoring alerts for high 5xx error rates from specific gateways.",
+  "created_at": "2025-09-02",
+  "resolved_by": ["sasankh.varma@juspay.in", "sobhita@juspay.in"],
+  "priority": "high",
+  "merchant_impact": "pharmeasytech and potentially other merchants experiencing refund status confusion",
+  "jira_ticket": "EUL-19068",
+  "gateway": "Pinelabs",
+  "endpoint": "https://pinepg.in/api/PG",
+  "timeline": {
+    "issue_reported": "2025-09-02 15:04",
+    "jira_created": "2025-09-02 15:06",
+    "investigation_started": "2025-09-02 15:34",
+    "fix_committed": "2025-09-02 16:06",
+    "deployment_scheduled": "2025-09-04",
+    "deployment_completed": "2025-09-04"
+  },
+  "technical_details": {
+    "transaction_type": "3",
+    "merchant_id": "308105",
+    "unique_request_id": "17563953",
+    "response_code": "500",
+    "error_message": "An error has occurred.",
+    "actual_gateway_status": "Success",
+    "juspay_status_before_fix": "Failed",
+    "juspay_status_after_fix": "Pending"
+  },
+  "business_impact": {
+    "risk_level": "High",
+    "potential_duplicate_refunds": true,
+    "merchant_confusion": true,
+    "reconciliation_issues": true
+  }
+},
+{
+  "id": "JSP-1029",
+  "title": "Razorpay CFB Surcharge Integration - Payload Format and Configuration Issues",
+  "description": "Merchant hppay integrating CFB (Customer Fee Bearing) surcharge feature with Razorpay encountered multiple issues: 1) Initial payload format error where Razorpay rejected bracketed keys like 'card[cvv]', 'card[expiry_month]' requiring nested JSON objects instead, 2) Integrity check failure due to amount mismatch (sync response showing 1.01 vs transaction detail not calculating surcharge due to should_block_surcharge=true), 3) Business requirement for mixed surcharge models - MDR for Debit Card/Net Banking and CFB for Credit Card transactions across two Razorpay PGs, 4) Configuration limitation where 'Razorpay Surcharge Breakup' setting under General Settings impacts entire MDR model preventing selective application.",
+  "resolution": "1) Updated merchant_config should_block_surcharge to false enabling proper surcharge calculation, 2) Developed solution with OR condition on CFB flag and payment flow for Razorpay, 3) Implemented priority-based settings: Merchant level CFB > MGA flag CUSTOMER_FEE_BEARING_SURCHARGE > Merchant bearing, 4) Maintained backward compatibility with both merchant and MGA config, 5) Created development plan for 2 weeks sandbox + 1 week production deployment to support mixed surcharge models.",
+  "tags": [
+    "Razorpay",
+    "CFB",
+    "Surcharge",
+    "MDR",
+    "Configuration",
+    "Payload-Format",
+    "Integrity-Check",
+    "Mixed-Models",
+    "S2S-Integration",
+    "should_block_surcharge",
+    "hppay",
+    "Development",
+    "Business-Logic"
+  ],
+  "created_at": "2025-07-30",
+  "resolved_by": "sasankh.varma@juspay.in"
+},
+{
+  "id": "JSP-1030",
+  "title": "Refund API Error Response Format Change - Merchant Disabled for Refund",
+  "description": "Request to modify error response format when merchants attempt to use refund API but refund functionality is not enabled for their MID. Currently, the system returns a complex JSON error response with multiple fields including user_message, developer_message, code, category, etc. The PI (Payment Intelligence) team requires a simplified single-line error message for easier alert handling and processing. Investigation revealed that the complex error response structure is coming from the Refund Table in the database rather than being a simple code change, indicating a deeper architectural issue with how refund permission errors are stored and retrieved.",
+  "resolution": "Investigation ongoing. Initial attempts to modify the error response through code changes were unsuccessful, confirming that the issue is database-related rather than code-related. The complex JSON error structure appears to be stored in the Refund Table. Solution requires either: 1) Database schema/data modification to store simplified error messages, 2) Application layer transformation to convert complex database responses to simple messages, 3) Refactoring error handling logic to generate responses programmatically rather than from database entries.",
+  "tags": [
+    "Refund-API",
+    "Error-Response",
+    "Database-Issue",
+    "Message-Format",
+    "PI-Team",
+    "Alert-Handling",
+    "Merchant-Configuration",
+    "Access-Control",
+    "Response-Simplification",
+    "Database-Schema"
+  ],
+  "created_at": "2025-07-31",
+  "resolved_by": "ekta.bansal@juspay.in"
+},
+{
+  "id": "JSP-1031",
+  "title": "Easebuzz Charge Mismatch - Card BIN Classification Discrepancy (Retail vs Corporate)",
+  "description": "Easebuzz gateway reported charge validation failures for ICICI Prudential and ICICI Lombard merchants due to discrepancies in card BIN classification. Sample transaction (Order ID: 32040619) with BIN 652972 was classified as 'Retail' in Juspay's system but 'Corporate' in Easebuzz's system, causing charge calculation mismatches. Net Amount: ₹6,651.00 vs Effective Amount: ₹6,714.57. Easebuzz shared charge validation data showing request charges (53.87, 9.7) vs calculated charges (peb_service_charge: 73.16, peb_service_tax: 13.17). Investigation revealed that NPCI team classified the BIN as product 'OTHERS', not corporate as initially assumed by Easebuzz.",
+  "resolution": "Investigation conducted with NPCI/RuPay team to clarify BIN classification. NPCI confirmed that BIN 652972 should be classified as product 'OTHERS', not corporate. However, the thread was closed without clear resolution of the charge mismatch issue or synchronization of BIN data between Juspay and Easebuzz systems. No definitive fix was implemented to prevent future classification discrepancies.",
+  "tags": [
+    "Easebuzz",
+    "BIN-Classification",
+    "Charge-Mismatch",
+    "RETAIL-vs-Corporate",
+    "NPCI",
+    "RuPay",
+    "Authentication-Failed",
+    "ICICI-Prudential",
+    "ICICI-Lombard",
+    "Settlement-Issues",
+    "Card-Metadata"
+  ],
+  "created_at": "2025-08-01",
+  "resolved_by": "dhananjai.jagannathan@juspay.in"
+},
+{
+  "id": "JSP-1032",
+  "title": "Refund Audit Trail Cross-Transaction Log Contamination",
+  "description": "Merchant orangehealth reported an issue where refund audit trail for a successful PhonePe transaction (Order ID: TEST_2708391) contained transaction status sync logs from a failed Easebuzz transaction. The order had two transaction attempts: first failed via Easebuzz, second succeeded via PhonePe. When refund was attempted for the successful PhonePe transaction (Refund Unique Request Id: 32795_TEST_2708391), the refund audit trail incorrectly displayed sync logs from the failed Easebuzz transaction, causing confusion in transaction tracking and audit trail integrity.",
+  "resolution": "Issue explanation provided by KV team clarifying that the behavior is by design - logs are rendered based on request IDs that match the unique refund request ID. When force sync is triggered from dashboard, all transactions get traversed and sync happens for every transaction, which is why logs from the failed Easebuzz transaction appear in the PhonePe refund audit trail. No immediate fix implemented, but the behavior was clarified as expected system functionality.",
+  "tags": [
+    "Refund-Audit-Trail",
+    "Cross-Transaction-Logs",
+    "Force-Sync",
+    "Dashboard",
+    "Easebuzz",
+    "PhonePe",
+    "Transaction-Sync",
+    "Log-Contamination",
+    "Request-ID",
+    "Audit-Trail-Integrity"
+  ],
+  "created_at": "2025-08-01",
+  "resolved_by": "karthik.kumar@juspay.in"
+},
+{
+  "id": "JSP-1033",
+  "title": "TPSL Gateway Webhook Decoding Failure and Status Sync Timeout Issues",
+  "description": "Multiple issues with TPSL payment gateway for merchant BMS (Order ID: 10050348): 1) Webhook decoding failure where encrypted webhook data could not be decoded, resulting in 'Invalid Request' response despite successful transaction status in decrypted logs, 2) Status sync API timeout (30001ms) causing transaction to be marked as 'Authentication Failed' instead of keeping it pending, 3) Hard sync later revealed transaction was actually successful. The webhook contained valid success data (txn_status: 0300, txn_msg: SUCCESS) but decoding logic failed. Root issue is premature status marking during timeout scenarios instead of maintaining pending state for proper resolution.",
+  "resolution": "1) Changes merged to handle 5xx responses by keeping order status as 'pending' instead of 'Authentication Failed', 2) Service configuration enabled for required gateways to implement pending status logic, 3) New common function implemented for sync calls to include improved error handling, 4) Deployment scheduled with ETA provided for merchant communication. However, specific webhook decoding issue for TPSL still requires resolution.",
+  "tags": [
+    "TPSL",
+    "Webhook-Decoding",
+    "Status-Sync",
+    "Timeout",
+    "Authentication-Failed",
+    "Pending-Status",
+    "Encryption",
+    "SOAP-API",
+    "BMS",
+    "5xx-Error-Handling",
+    "Hard-Sync"
+  ],
+  "created_at": "2025-08-01",
+  "resolved_by": "karthik.kumar@juspay.in"
+},
+{
+  "id": "JSP-1034",
+  "title": "Tokenization Onboarding Status API Discrepancy - VISA Network",
+  "description": "Zohopay reported discrepancies in onboarding status between two tokenization APIs for VISA cards. API /tokenization/onboarding returned status 'ONBOARDED' while /ec/oauth/altIdOnboard/list returned status 'Pending' for the same Associate ID 10870727. Investigation revealed different status criteria: tokenization/onboarding checks LTR entries and system configs creation, while altIdOnboard/list checks credential activation status. VISA network has specific 3-day activation period where credentials remain PENDING before tokenization can be performed.",
+  "resolution": "Issue clarified as expected behavior difference between APIs. Merchant advised to rely on /ec/oauth/altIdOnboard/list API response for accurate tokenization readiness status. No code changes required as both APIs are working as designed with different status criteria. Documentation clarification provided about VISA network's 3-day activation requirement.",
+  "tags": [
+    "Tokenization",
+    "Onboarding-Status",
+    "VISA",
+    "API-Discrepancy",
+    "Credential-Activation",
+    "LTR",
+    "OAuth",
+    "3-Day-Waiting",
+    "Zohopay",
+    "Status-Mismatch"
+  ],
+  "created_at": "2025-08-01",
+  "resolved_by": "prabhat.dwivedi@juspay.in"
+},
+{
+  "id": "JSP-1035",
+  "title": "CyberSource Pre-Auth Capture/Void Failure - Invalid authRequestID Parameter Mapping",
+  "description": "CyberSource gateway rejecting Capture and Void operations for Smart Gateway transactions (MID: 34436) with error 'invalidField: c:authRequestID' and reason code 102. Investigation revealed incorrect parameter mapping where authenticationTransactionID is being stored as epgtxnid and passed to CyberSource instead of the correct requestID. UAT environment (MID: egencia) works correctly by passing requestID from authorization response as authRequestID. Production Smart Gateway flow incorrectly uses authenticationTransactionID causing CYBS to reject capture/void requests.",
+  "resolution": "Issue identified and confirmed with HDFC/CyberSource team who analyzed the transaction and confirmed incorrect authRequestID value. Parameter mapping changes required to pass requestID instead of authenticationTransactionID for capture/void operations. Development team confirmed this is a simple parameter mapping fix that can be implemented.",
+  "tags": [
+    "CyberSource",
+    "Pre-Auth",
+    "Capture",
+    "Void",
+    "Smart-Gateway",
+    "authRequestID",
+    "Parameter-Mapping",
+    "authenticationTransactionID",
+    "requestID",
+    "HDFC",
+    "Invalid-Field"
+  ],
+  "created_at": "2025-08-04",
+  "resolved_by": "imdad@juspay.in"
+},
+{
+  "id": "JSP-1036",
+  "title": "Mandate Register Transactions Stuck in Pending State - 4xx Response Handling",
+  "description": "Mandate register transactions getting stuck in 'Authorizing' state despite receiving 400 response codes from gateways. Issue observed with multiple gateways including Lotuspay and Go Cashfree. When mandate registration initiation receives 4xx responses (particularly 400 with parameter_invalid status code), transactions remain in pending/authorizing state instead of being marked as authentication failed. Sample case: Order ID 17554605 for merchant storytv with Go Cashfree gateway showing 400 response but transaction still in Authorizing state.",
+  "resolution": "Changes implemented for Lotuspay gateway to handle 400 responses with parameter_invalid code by marking transaction status as authentication failed. Fix merged in sandbox environment but not yet released to production. Similar fix identified as needed for Go Cashfree gateway and potentially other gateways handling mandate registration. Systematic review of 4xx response handling across all mandate registration flows required.",
+  "tags": [
+    "Mandate-Registration",
+    "Pending-State",
+    "4xx-Response",
+    "parameter_invalid",
+    "Lotuspay",
+    "Go-Cashfree",
+    "Authentication-Failed",
+    "Status-Handling",
+    "storytv",
+    "Transaction-Stuck"
+  ],
+  "created_at": "2025-08-14",
+  "resolved_by": "deepak.kushwaha@juspay.in"
+},
+{
+  "id": "JSP-1037",
+  "title": "Hyper PG Transactions Stuck in Authorizing State - Decode Failure Due to Missing Fields",
+  "description": "Merchant justswish created Hyper_pg with MGA ID 116393 on July 15, 2025, and marked it inactive the same day. All transactions routed through this payment gateway encountered 'merchant_id is invalid' error during initiation. While some transactions were correctly marked as Authentication Failed, several remain stuck in Authorizing state. Root cause identified as decode failure due to missing mandatory fields in gateway responses: 1) Initiation response missing 'status' field, 2) Sync response missing 'error_message' field.",
+  "resolution": "Issue identified and assigned for fix. Root cause analysis completed showing decode failure due to missing mandatory fields. Development team assigned to implement proper error handling for missing fields in Hyper PG responses. Fix should handle cases where mandatory fields are absent and ensure transactions are marked with appropriate terminal status instead of remaining in intermediate states.",
+  "tags": [
+    "Hyper-PG",
+    "Authorizing-State",
+    "Decode-Failure",
+    "Missing-Fields",
+    "merchant_id-invalid",
+    "Status-Field",
+    "Error-Message-Field",
+    "justswish",
+    "MGA-ID",
+    "Intent-Transactions"
+  ],
+  "created_at": "2025-08-04",
+  "resolved_by": "ananya.gupta@juspay.in"
+},
+{
+  "id": "JSP-1038",
+  "title": "Billdesk CFB Surcharge Verification Failed - Floating Point Arithmetic Precision Issue",
+  "description": "ICICIPRU merchant experiencing 'SURCHARGE VERIFICATION FAILED' errors during /v2/pay/start calls for Billdesk gateway transactions. Issue occurs in Customer Fee Bearing (CFB) surcharge model where post-initiation validation fails due to floating point arithmetic precision errors. Example: surcharge 873.0 + tax 157.14 = 1030.13999999 (due to floating point arithmetic) which truncates to 1030.13, but Billdesk calculates 1030.14. This 0.01 difference causes validation failure and transactions marked as JUSPAY_DECLINED despite being initiated to gateway.",
+  "resolution": "PR raised and under review to address floating point arithmetic precision in surcharge calculations. Fix involves implementing proper decimal handling to avoid floating point precision errors. Billdesk confirmed their calculation logic matches Juspay's implementation - no changes needed in calculation methodology, only precision handling. ETA: Next week's API-TXN release for production deployment.",
+  "tags": [
+    "Billdesk",
+    "CFB-Surcharge",
+    "Floating-Point-Arithmetic",
+    "Surcharge-Verification",
+    "Precision-Error",
+    "Post-Initiation-Validation",
+    "ICICIPRU",
+    "JUSPAY_DECLINED",
+    "Decimal-Truncation",
+    "Tax-Calculation"
+  ],
+  "created_at": "2025-08-04",
+  "resolved_by": "saransh.pasricha@juspay.in"
+},
+{
+  "id": "JSP-1039",
+  "title": "List EMI API CORS Failure - Invalid Access-Control-Allow-Origin Header",
+  "description": "List EMI API calls failing due to CORS issue when triggered from hyper-sdk-web. Preflight response contained invalid Access-Control-Allow-Origin header 'api.juspay.in,*' causing browsers to block requests. Issue impacted all merchants with prepaid offers auto-applied, affecting live card transaction offers. Root cause traced to recent CORS changes on Saturday that introduced multiple origin values in header instead of single value. Additional complications arose from HDFC MID logger issues during deployment causing multiple release aborts due to Envoy 5xx errors.",
+  "resolution": "1) Identified CORS header format issue - browsers require single origin value, not comma-separated list, 2) Fixed header configuration to send proper single origin value, 3) Resolved HDFC MID logger issue that was causing tenant ID capture failures and Envoy 5xx errors during deployment, 4) Successfully deployed fix after multiple abort attempts due to infrastructure issues, 5) Maintained security by keeping host whitelisting approach instead of reverting to wildcard.",
+  "tags": [
+    "CORS",
+    "List-EMI-API",
+    "Access-Control-Allow-Origin",
+    "Hyper-SDK-Web",
+    "Preflight-Request",
+    "Offer-Engine",
+    "HDFC-MID",
+    "Envoy-5xx",
+    "Release-Abort",
+    "Security-Vulnerability",
+    "Browser-Blocking"
+  ],
+  "created_at": "2025-08-05",
+  "resolved_by": "anasuya@juspay.in"
+},
+{
+  "id": "JSP-1040",
+  "title": "SDK JP000 Generic Error for Consumer Finance Transactions - Amazon Pay Later Failures",
+  "description": "Zeptomarketplace experiencing JP000 error with 'Reason not available' message for consumerFinanceTxn using Amazon Pay Later. Affected order IDs: TSOOHBMGH19336, HPJOITSBM17881, SUIBMGJ23557. Investigation revealed failures originated at Amazon's end, but SDK response provided generic error message instead of meaningful error details. Issue occurs when /txns responds with Authentication Failed but system still opens Godel with pay/finish flow instead of directly responding with proper error message.",
+  "resolution": "Issue identified as Amazon-side failure with poor error message propagation. Recommendations provided: 1) Avoid opening Godel with pay/finish when /txns responds with Authentication Failed, 2) Directly respond with proper error message instead of continuing flow, 3) Improve error message handling to provide better user-facing messages, 4) Check for SDK parameters before continuing with payment flow to prevent unnecessary steps.",
+  "tags": [
+    "SDK",
+    "JP000",
+    "Consumer-Finance",
+    "Amazon-Pay-Later",
+    "Authentication-Failed",
+    "Generic-Error",
+    "Godel-Flow",
+    "Error-Propagation",
+    "zeptomarketplace",
+    "Pay-Finish-Flow"
+  ],
+  "created_at": "2025-08-05",
+  "resolved_by": "raghunandhan.v@juspay.in"
+},
+{
+  "id": "JSP-1041",
+  "title": "Billdesk Incorrect Entity Mapping - Refund Sync Calls Mapped as GW_INIT_REFUND",
+  "description": "Billdesk refund sync calls incorrectly mapped to GW_INIT_REFUND entity instead of GW_REFUND_SYNC, causing debugging confusion. Both refund initiation (https://api.billdesk.com/payments/ve1_2/refunds/create) and refund sync (https://api.billdesk.com/payments/ve1_2/refunds/get) mapped to same entity GW_INIT_REFUND. Dashboard shows incorrect entity classification making it difficult to distinguish between initiation and sync operations.",
+  "resolution": "Root cause identified as same function being used for both refund initiation and refund sync requests. Fix required to separate entity mapping logic so refund sync calls are properly mapped to GW_REFUND_SYNC entity for correct dashboard representation and debugging clarity.",
+  "tags": [
+    "Billdesk",
+    "Entity-Mapping",
+    "Refund-Sync",
+    "GW_INIT_REFUND",
+    "GW_REFUND_SYNC",
+    "Dashboard",
+    "Debugging",
+    "Function-Reuse"
+  ],
+  "created_at": "2025-08-05",
+  "resolved_by": "shreeshyam@juspay.in"
+},
+{
+  "id": "JSP-1042",
+  "title": "CyberSource SOAP API Authentication Migration - P12 Certificate Implementation Required",
+  "description": "CyberSource mandating migration from username/password authentication to P12 certificate-based authentication for SOAP API. Deadline: September 1, 2025 for CAS/Test environment, September 15, 2025 for production. Affects both Axis Bank and HDFC acquirers. Requires implementation of P12 authentication in PGCC dashboard with conditional fields, API authentication changes, and merchant credential migration.",
+  "resolution": "Implementation planned with P12 authentication support in PGCC dashboard. New merchants will default to P12 authentication (P12 Enabled: true), existing merchants will fallback to username/password. Dashboard changes include conditional mandatory fields, certificate upload functionality, and toggle between authentication methods. Development blocked pending P12 file password from credentials team.",
+  "tags": [
+    "CyberSource",
+    "SOAP-API",
+    "P12-Authentication",
+    "Certificate-Based-Auth",
+    "PGCC-Dashboard",
+    "Migration",
+    "Axis-Bank",
+    "HDFC",
+    "Security-Enhancement",
+    "Credential-Management"
+  ],
+  "created_at": "2025-08-05",
+  "resolved_by": "akshar.anup@juspay.in"
+},
+{
+  "id": "JSP-1043",
+  "title": "Smart Gateway Session API KMS Decryption Failure - is_pii_encrypted Flag Missing",
+  "description": "Smart Gateway /session API returning 500 errors due to KMS decryption failures with 'InvalidCiphertext' error. Issue affected multiple MIDs including SG2904, azhar_test, chetan_test in UAT environment. Root cause identified as missing is_pii_encrypted flag in internal_metadata table, causing system to attempt KMS decryption of internal_hash_key column that wasn't encrypted with the current KMS key. Dashboard changes inadvertently removed the is_pii_encrypted flag during recent updates.",
+  "resolution": "Issue resolved through dashboard revert and database fixes. Dashboard team identified recent changes that caused is_pii_encrypted flag removal from internal_metadata table. Reverted problematic changes and performed manual DB fixes for affected MIDs. System restored to working state with proper PII encryption flag handling. RCA requested for HDFC team communication.",
+  "tags": [
+    "Smart-Gateway",
+    "Session-API",
+    "KMS-Decryption",
+    "InvalidCiphertext",
+    "is_pii_encrypted",
+    "internal_metadata",
+    "Dashboard-Bug",
+    "PII-Encryption",
+    "UAT-Environment",
+    "Database-Fix"
+  ],
+  "created_at": "2025-08-06",
+  "resolved_by": "mownika@juspay.in"
+},
+{
+  "id": "JSP-1044",
+  "title": "Camspay Dual Transaction Mapping Issue - Wrong EPG TXN ID Selection",
+  "description": "Starhealth merchant order 11627113 initiated twice with Camspay gateway. First initiation failed with ResponseTimeout (9001ms, EPG TXN ID: I842507), second succeeded (EPG TXN ID: I842509). Order status check returned both transactions, but system mapped order to failed EPG TXN ID instead of successful one, causing status mismatch. PG shows transaction as CAPTURED but Juspay shows as failed due to incorrect EPG TXN ID mapping.",
+  "resolution": "Issue identified in transaction mapping logic. System currently takes head of response list for EPG TXN ID mapping, but in this case failed transaction appeared first. Fix committed to improve mapping logic to select appropriate transaction ID based on status rather than list position. Integration assumption that PG would send latest transaction as head was not met.",
+  "tags": [
+    "Camspay",
+    "Dual-Transaction",
+    "EPG-TXN-ID",
+    "Transaction-Mapping",
+    "Status-Mismatch",
+    "ResponseTimeout",
+    "Order-Status-Check",
+    "starhealth",
+    "Head-Selection-Logic"
+  ],
+  "created_at": "2025-08-14",
+  "resolved_by": "shreeshyam@juspay.in"
+},
+{
+  "id": "JSP-1045",
+  "title": "Easebuzz Multi-Currency Support Inquiry - Only INR Currently Supported",
+  "description": "Instaastro merchant requested multi-currency support for Easebuzz gateway integration. Investigation revealed no non-INR transactions in analytics and no currency selection option in PGCC configuration. Easebuzz documentation review requested to confirm currency capabilities.",
+  "resolution": "Confirmed that Easebuzz gateway integration currently supports only INR currency. Multi-currency support not available through Juspay-Easebuzz integration. Merchant informed of current limitation.",
+  "tags": [
+    "Easebuzz",
+    "Multi-Currency",
+    "INR-Only",
+    "PGCC-Configuration",
+    "Currency-Support",
+    "instaastro",
+    "Gateway-Limitation",
+    "Documentation-Review"
+  ],
+  "created_at": "2025-08-14",
+  "resolved_by": "chintan.jethi@juspay.in"
+},
+{
+  "id": "JSP-1046",
+  "title": "Refund Status Updates and Retry Mechanisms - Multi-Merchant Resolution",
+  "description": "Comprehensive refund handling issues across merchants newme, tvsmotor, instamoney, ludoplayers, and bigbasket. Issues include refund status update failures, retry logic for failed refunds, reconciliation discrepancies where gateways mark refunds as 'Cancelled', and spike in 'Authorizing' status requiring improved error handling and terminal state updates.",
+  "resolution": "Implemented enhanced refund status tracking system with automated retry mechanisms. Developed reconciliation logic to handle gateway status mismatches. Created monitoring for 'Authorizing' status spikes with improved silent retry logic and proper terminal state transitions. Established merchant-specific refund handling workflows.",
+  "tags": [
+    "Refund-Status-Updates",
+    "Retry-Mechanisms", 
+    "Reconciliation",
+    "Multi-Merchant",
+    "Authorizing-Status",
+    "Silent-Retry",
+    "Terminal-States",
+    "Gateway-Mismatch"
+  ],
+  "created_at": "2025-08-15",
+  "resolved_by": "sarish.rv@juspay.in"
+},
+{
+  "id": "JSP-1047", 
+  "title": "Order Status API and Webhook Enhancement - Conflicted Transactions and UDF Support",
+  "description": "Merchant requirements for enhanced order status API and webhook integrations. Kotak Insurance requested conflicted transaction indicators in order status responses. Firstcry required UDF passing to Cashfree in order status API. Fitpass needed customer behavior data through APIs/webhooks. Adityabirla_sunlife requested card BIN information in order status checks and webhooks.",
+  "resolution": "Enhanced order status API to include conflicted transaction indicators and additional metadata fields. Implemented UDF forwarding capability to gateway partners like Cashfree. Added customer behavior tracking and card BIN information to webhook payloads. Created configurable webhook data enrichment for merchant-specific requirements.",
+  "tags": [
+    "Order-Status-API",
+    "Webhook-Enhancement", 
+    "Conflicted-Transactions",
+    "UDF-Support",
+    "Customer-Behavior",
+    "Card-BIN",
+    "API-Enhancement",
+    "Merchant-Requirements"
+  ],
+  "created_at": "2025-08-15",
+  "resolved_by": "tsuki@juspay.in"
+},
+{
+  "id": "JSP-1048",
+  "title": "Gateway Integration Challenges - Token Expiry and Configuration Issues",
+  "description": "Multiple merchant integration challenges including snapdeal's pinelabs_online gateway issues, dell's 'Token claims invalid: exp=token expired' error with Pinelabs gateway, marrowmed's Unlimit gateway integration requirements, and myntra's VAPT report requests for GPAY_IMF gateway integration. Issues span authentication, configuration, and compliance requirements.",
+  "resolution": "Resolved token expiry issues by implementing proper token refresh mechanisms and validation. Updated gateway configuration templates for smoother merchant onboarding. Created standardized VAPT documentation and compliance packages. Established gateway-specific troubleshooting guides and integration checklists for common issues.",
+  "tags": [
+    "Gateway-Integration",
+    "Token-Expiry",
+    "Pinelabs",
+    "Unlimit",
+    "GPAY_IMF",
+    "VAPT-Compliance",
+    "Authentication-Issues",
+    "Merchant-Onboarding"
+  ],
+  "created_at": "2025-08-15", 
+  "resolved_by": "aadya@juspay.in"
+},
+{
+  "id": "JSP-1049",
+  "title": "Surcharge and Offer Management Implementation - Complex Gateway Calculations",
+  "description": "Implementation of surcharge and offer management features across merchants hppay, adityabirla_fashion, firstcry, and porter. Challenges include complex gateway-specific calculation logic, Razorpay surcharge application, base_amount/delivery_charge updates in order calls, and ensuring accurate surcharge calculations across different payment methods.",
+  "resolution": "Developed flexible surcharge calculation engine supporting gateway-specific logic. Implemented dynamic offer management system with real-time calculation updates. Created order update mechanisms for base_amount and delivery_charge modifications. Established validation frameworks to ensure calculation accuracy across payment methods and gateways.",
+  "tags": [
+    "Surcharge-Management",
+    "Offer-Integration",
+    "Gateway-Calculations",
+    "Razorpay-Surcharge",
+    "Order-Updates",
+    "Payment-Methods",
+    "Calculation-Logic",
+    "Multi-Gateway"
+  ],
+  "created_at": "2025-08-15",
+  "resolved_by": "prateeth.bharadwaj@juspay.in"
+},
+{
+  "id": "JSP-1050",
+  "title": "UPI and Native OTP Experience Optimization - QR Code and Eligibility Issues",
+  "description": "UPI experience improvements including UPI QR code functionality issues in sandbox environment for session API merchants, Native OTP eligibility problems for specific BINs at Juspay's end affecting myntra, and overall UPI transaction flow optimization for merchants like wakefit. Issues impact both sandbox testing and production UPI experiences.",
+  "resolution": "Fixed UPI QR code generation and processing in sandbox environment for session API compatibility. Updated Native OTP eligibility criteria and BIN validation logic. Enhanced UPI transaction flow monitoring and error handling. Implemented comprehensive UPI testing framework for sandbox environments with production-like behavior.",
+  "tags": [
+    "UPI-QR-Code",
+    "Native-OTP",
+    "Sandbox-Issues",
+    "BIN-Eligibility",
+    "Session-API",
+    "UPI-Flow",
+    "Transaction-Optimization",
+    "Testing-Framework"
+  ],
+  "created_at": "2025-08-15",
+  "resolved_by": "priyanga.kandasamy@juspay.in"
+},
+{
+  "id": "JSP-1051",
+  "title": "Instant Refund Configuration Request - Scheduler Delay Optimization for newme and tvsmotor Merchants",
+  "description": "Merchants newme and tvsmotor requesting instant refund initiation to gateway without 20-25 minute scheduler delays. Currently refunds are queued by scheduler causing delays even when merchants have enabled Instant Refunds on gateway dashboards (PayU). Merchant newme provided specific examples showing 24-minute delays (prod_6944429: 12:51:16 PM to 1:15:30 PM). tvsmotor has similar requirements. Merchants concerned about customer experience and alignment with gateway instant refund capabilities.",
+  "resolution": "Approved configuration change to skip scheduler for instant refund execution. Merchants need to be added to refund_instant_execute_enabled_merchants service config. Implementation requires coordination with gateways to prevent rate limiting and merchant preparation for potential increased latency in refund initiation API. Configuration change will enable direct gateway initiation without queue delays for specified merchants.",
+  "tags": [
+    "Instant-Refund",
+    "Scheduler-Delay",
+    "PayU",
+    "Refund-Initiation",
+    "Queue-Management",
+    "Rate-Limiting",
+    "API-Latency",
+    "newme",
+    "tvsmotor",
+    "Gateway-Coordination"
+  ],
+  "created_at": "2025-07-04",
+  "resolved_by": "yashi@juspay.in"
+},
+{
+  "id": "JSP-1052",
+  "title": "Pinelabs Online Gateway RSA Decryption Failure - MessageNotRecognized Error",
+  "description": "Snapdeal merchant (MID: snapdeal_test) experiencing INTERNAL_SERVER_ERROR during /txns call with pinelabs_online gateway integration. Root cause identified as RSA decryption failure with 'MessageNotRecognized' error when decrypting card number. Error occurs because decrypted message doesn't have proper PKCS15 structure, likely due to improper payload encryption. Issue affects PP signature merchant requiring client-side encryption validation.",
+  "resolution": "Issue diagnosed as client-side encryption problem with improper PKCS15 structure in encrypted payload. Recommended verifying client environment configuration in initiate payload first. Suggested testing with dev tools using azhar_test MID and snapdeal client ID to validate encryption implementation. Resolution requires correcting client-side encryption to ensure proper PKCS15 padding structure for RSA decryption compatibility.",
+  "tags": [
+    "Pinelabs-Online",
+    "RSA-Decryption",
+    "MessageNotRecognized",
+    "PKCS15-Structure",
+    "Client-Side-Encryption",
+    "PP-Signature",
+    "snapdeal",
+    "Card-Decryption",
+    "Encryption-Failure",
+    "Gateway-Integration"
+  ],
+  "created_at": "2025-07-04",
+  "resolved_by": "deepesh@juspay.in"
+},
+{
+  "id": "JSP-1053",
+  "title": "CCAvenue Refund Flow Issue - API Response vs Actual Refund Status Mismatch for tvsmotor Merchant",
+  "description": "Critical refund processing issue for tvsmotor merchant via CCAvenue gateway where initial refund API response returns 'Success' but actual refund status differs. The use case involves tvsmotor showing immediate bank information entry to users when refund fails due to exhausted refund period, but scheduler delays were breaking this flow. Merchant was enabled on refund_instant_execute_enabled_merchants config to bypass scheduler, but issue persisted. Root cause: CCAvenue returns Success response for refund initiation API call, but actual refund status is only available through separate getRefundDetails API call. Current implementation treats API response as final status without checking actual refund processing status via getRefundDetails. This causes discrepancy between reported success and actual refund failure, impacting merchant's business flow for handling failed refunds. Sample order: commit 1751699513. Issue documented in JIRA EUL-18084.",
+  "root_cause": "CCAvenue gateway architecture separates refund initiation response from actual refund status. Initial refund API returns success/failure for request acceptance, not actual refund processing. Actual refund status requires separate getRefundDetails API call. Juspay's current implementation treats initiation response as final status without subsequent status verification through getRefundDetails API.",
+  "fix_applied": "Investigation ongoing. Merchant temporarily removed from refund_instant_execute_enabled_merchants config, but refunds still being initiated directly to CCAvenue with SUCCESS response. Need to implement getRefundDetails API call after refund initiation to fetch actual refund status. Configuration issue resolved in sandbox - refund_instant_execute_enabled_merchants config was not released in sandbox environment, causing scheduler bypass confusion.",
+  "error_patterns": [
+    {
+      "pattern": "Refund API returns Success but actual refund fails",
+      "impact": "Status mismatch between API response and actual processing"
+    },
+    {
+      "pattern": "getRefundDetails required for actual status",
+      "context": "CCAvenue specific API architecture"
+    },
+    {
+      "pattern": "Scheduler bypass not working as expected",
+      "cause": "Configuration not released in sandbox environment"
+    },
+    {
+      "pattern": "Business flow disruption for failed refund handling",
+      "merchant_impact": "Cannot show bank info entry when refund period exhausted"
+    }
+  ],
+  "systems_involved": [
+    "CCAvenue Payment Gateway",
+    "Refund Processing Service",
+    "Refund Scheduler",
+    "refund_instant_execute_enabled_merchants Configuration",
+    "getRefundDetails API",
+    "Merchant Dashboard",
+    "JIRA Issue Tracking (EUL-18084)"
+  ],
+  "tags": [
+    "CCAvenue",
+    "Refund-Flow",
+    "API-Response-Mismatch",
+    "getRefundDetails",
+    "Status-Verification",
+    "tvsmotor",
+    "Scheduler-Bypass",
+    "refund_instant_execute_enabled_merchants",
+    "Business-Flow",
+    "Refund-Period-Exhausted",
+    "Configuration-Issue",
+    "Sandbox-Environment",
+    "JIRA-EUL-18084"
+  ],
+  "ai_suggestion": "Implement two-phase refund status handling for CCAvenue: 1) Process initial refund initiation response for immediate feedback, 2) Schedule getRefundDetails API call to fetch actual refund status and update accordingly, 3) Add configuration flag for gateways requiring separate status verification, 4) Implement retry logic for getRefundDetails with exponential backoff, 5) Create monitoring for status mismatches between initiation and verification, 6) Update merchant notification logic to handle pending status during verification phase, 7) Document CCAvenue-specific refund flow requirements for future integrations.",
+  "created_at": "2025-07-07",
+  "resolved_by": "balaji.b@juspay.in",
+  "priority": "high",
+  "merchant_impact": "tvsmotor unable to properly handle failed refunds for customer bank info collection",
+  "jira_ticket": "EUL-18084",
+  "gateway": "CCAvenue",
+  "sample_order": "commit 1751699513",
+  "timeline": {
+    "issue_reported": "2025-07-07 10:54",
+    "jira_created": "2025-07-07 10:55",
+    "investigation_started": "2025-07-07 11:36",
+    "config_clarification": "2025-07-07 15:35",
+    "status_verification_discussion": "2025-07-07 17:37",
+    "root_cause_confirmed": "2025-07-07 18:28"
+  },
+  "technical_details": {
+    "refund_initiation_api": "Returns success/failure for request acceptance",
+    "getRefundDetails_api": "Returns actual refund processing status",
+    "current_implementation": "Treats initiation response as final status",
+    "required_implementation": "Two-phase status verification with getRefundDetails",
+    "configuration_affected": "refund_instant_execute_enabled_merchants",
+    "environment_issue": "Sandbox config not released causing scheduler confusion"
+  },
+  "business_impact": {
+    "merchant_flow": "Show bank info entry when refund fails due to exhausted period",
+    "current_problem": "Cannot distinguish between API acceptance and actual refund success",
+    "customer_experience": "Delayed or incorrect refund status communication",
+    "risk_level": "High - affects core refund business logic"
+  },
+  "stakeholders": [
+    "tvsmotor merchant",
+    "CCAvenue gateway team",
+    "Refund processing team",
+    "Configuration management team",
+    "Customer support team"
+  ]
+},
+{
+  "id": "JSP-1054",
+  "title": "Adityabirla Fashion Order Update API - Missing amount_info Support for base_amount and deliverycharge",
+  "description": "Adityabirla Fashion merchant requested support for updating base_amount and deliverycharge through the order update API using amount_info parameter. The merchant is planning to integrate offers and has a specific use case where they need to update order amounts dynamically. Current order update API does not support updating the amount_info field, which contains base_amount and add_on_amounts (like deliverycharge). The merchant provided a sample curl request showing the desired functionality: updating amount_info with base_amount=80 and deliverycharge=20 via the /orders/:order_id endpoint. This feature is required for their offers integration workflow where order amounts need to be modified after initial order creation.",
+  "root_cause": "Order update API implementation lacks support for amount_info parameter updates. The current codebase does not include logic to handle amount_info field modifications in the order update flow, preventing merchants from updating base_amount and delivery charges dynamically.",
+  "fix_applied": "Development team implemented order update changes to support amount_info parameter updates. The feature was deployed to sandbox environment on July 14th, 2025. Key implementation details: 1) Added support for amount_info parameter in order update API, 2) Enabled updating base_amount and add_on_amounts (deliverycharge) fields, 3) Restriction: Order updates only allowed from create order API if order ID is the same, 4) Testing documentation provided via Google Sheets for merchant validation.",
+  "error_patterns": [
+    {
+      "pattern": "amount_info parameter not supported in order update API",
+      "impact": "Cannot update base_amount or delivery charges dynamically"
+    },
+    {
+      "pattern": "Offers integration blocked by missing order update functionality",
+      "context": "Merchant workflow requires dynamic amount modifications"
+    },
+    {
+      "pattern": "Order update API limited to basic fields only",
+      "limitation": "No support for complex amount structures"
+    }
+  ],
+  "systems_involved": [
+    "Order Update API",
+    "Offers Integration System",
+    "amount_info Parameter Handling",
+    "Order Management Service",
+    "Merchant Dashboard",
+    "Sandbox Environment",
+    "Testing Framework"
+  ],
+  "tags": [
+    "Order-Update-API",
+    "amount_info",
+    "base_amount",
+    "deliverycharge",
+    "Offers-Integration",
+    "Adityabirla-Fashion",
+    "Dynamic-Pricing",
+    "API-Enhancement",
+    "Sandbox-Deployment",
+    "Merchant-Request",
+    "add_on_amounts",
+    "Order-Management"
+  ],
+  "ai_suggestion": "For future order update enhancements: 1) Implement comprehensive validation for amount_info updates to ensure data integrity, 2) Add support for partial amount_info updates (only specific fields), 3) Create audit trails for order amount modifications, 4) Implement business rules validation for amount changes, 5) Add real-time notifications for significant amount modifications, 6) Consider implementing approval workflows for large amount changes, 7) Extend support to other complex order parameters beyond amount_info.",
+  "created_at": "2025-07-07",
+  "resolved_by": "chintan.jethi@juspay.in",
+  "priority": "medium",
+  "merchant_impact": "Adityabirla Fashion can now dynamically update order amounts for offers integration",
+  "jira_ticket": "EUL-18090",
+  "feature_type": "API Enhancement",
+  "timeline": {
+    "issue_reported": "2025-07-07 11:12",
+    "jira_created": "2025-07-07 11:59",
+    "requirement_clarification": "2025-07-07 15:21",
+    "development_assigned": "2025-07-07 20:11",
+    "eta_provided": "2025-07-07 20:14",
+    "sandbox_deployment": "2025-07-14 18:18",
+    "testing_documentation": "2025-07-14 18:18"
+  },
+  "technical_details": {
+    "api_endpoint": "/orders/:order_id",
+    "new_parameter": "amount_info",
+    "supported_fields": ["base_amount", "add_on_amounts"],
+    "add_on_types": ["deliverycharge"],
+    "update_restriction": "Only from create order API with same order ID",
+    "deployment_environment": "sandbox",
+    "testing_sheet": "https://docs.google.com/spreadsheets/d/1gNO7OFu5ojVRkeezTFyM0nQNPwSDmD5vGkfyG_UYJ7M/edit?gid=0#gid=0"
+  },
+  "sample_request": {
+    "method": "PATCH",
+    "url": "https://sandbox.juspay.in/orders/:order_id",
+    "headers": {
+      "version": "2021-04-20",
+      "Authorization": "Basic <API KEY>"
+    },
+    "form_data": {
+      "udf1": "test_exist",
+      "amount_info": "{\"base_amount\":\"80\", \"add_on_amounts\": [{\"name\":\"deliverycharge\",\"amount\":\"20\"}]}"
+    }
+  },
+  "business_impact": {
+    "merchant_workflow": "Enables dynamic pricing for offers integration",
+    "use_case": "Update base_amount and delivery charges after order creation",
+    "integration_type": "Offers system integration",
+    "flexibility": "Allows real-time order amount modifications"
+  },
+  "stakeholders": [
+    "Adityabirla Fashion merchant",
+    "Offers integration team",
+    "Order management team",
+    "API development team",
+    "Testing team",
+    "Merchant support team"
+  ]
+},
+{
+  "id": "JSP-1055",
+  "title": "Merchant TPS Limit Increase Request - Traffic Spike Preparation",
+  "description": "Merchant BigCommerce requested TPS increase from 200 to 1500 for Black Friday sale. Current infrastructure analysis shows: 1) Current TPS: 200, 2) Requested TPS: 1500, 3) Peak traffic expected during 48-hour sale period, 4) Cost implications for infrastructure scaling, 5) Risk assessment for sudden traffic spikes. Merchant insisting on maximum TPS but infrastructure team recommends gradual scaling approach. Need to balance merchant requirements with system stability and cost optimization.",
+  "resolution": "1) Conducted infrastructure capacity analysis and cost estimation, 2) Proposed tiered scaling approach: immediate increase to 500 TPS, then 800 TPS after monitoring, 3) Implemented intelligent traffic shaping and load balancing, 4) Set up real-time monitoring and auto-scaling triggers, 5) Provided cost breakdown: 500 TPS = $2000/month, 1000 TPS = $5000/month, 1500 TPS = $8500/month, 6) Established SLA agreements and rollback procedures, 7) Created traffic spike response playbook for future events.",
+  "status": "resolved",
+  "tags": ["TPS", "Scaling", "Traffic-Spike", "Capacity-Planning", "Cost-Estimation", "Infrastructure", "Merchant-Limits", "Load-Balancing", "Auto-Scaling", "SLA"],
+  "created_at": "2024-11-15T00:00:00.000000",
+  "resolved_at": "2024-11-18T00:00:00.000000",
+  "resolved_by": "infrastructure-team@juspay.in",
+  "priority": "high",
+  "category": "infrastructure"
+},
+{
+  "id": "JSP-1056",
+  "title": "NetBanking Callback Delay - ICICI",
+  "description": "Observed consistent 3-5 min delay in NetBanking payment success callbacks from ICICI gateway during 10–11am peak hours. This led to orders being stuck in PENDING state until callback was received.",
+  "resolution": "Enabled proactive S2S status polling every 60s for transactions stuck >2 mins. Coordinated with ICICI tech team to optimize callback delivery. Added monitoring to track callback latency across banks.",
+  "tags": ["NetBanking", "ICICI", "Callbacks", "Latency", "Polling"],
+  "created_at": "2025-09-01",
+  "resolved_by": "rohit@juspay.in"
+},
+{
+  "id": "JSP-1057",
+  "title": "GPay Intent Flow Crash on Pixel 9 (Android 15 Beta)",
+  "description": "Crash reports surfaced for GPay intent UPI collect flow on Pixel 9 devices running Android 15 beta builds. Stacktrace indicated failure in handling deep link with missing flags.",
+  "resolution": "Added intent flag `FLAG_ACTIVITY_NEW_TASK` for compatibility with Android 15. Verified across Pixel devices and OEM beta builds. Rolled out hotfix patch to SDK v5.2.3.",
+  "tags": ["UPI", "GooglePay", "Android15", "Intent", "SDK"],
+  "created_at": "2025-09-05",
+  "resolved_by": "ananya@juspay.in"
+},
+{
+  "id": "JSP-1058",
+  "title": "Payout API 502 Errors - AWS NLB Timeout",
+  "description": "During high load, payout service intermittently failed with 502 errors due to AWS NLB idle timeout (30s). Affected merchants reported payout initiation failures.",
+  "resolution": "Increased AWS NLB idle timeout to 60s. Optimized DB queries in payout service reducing avg response time from 28s → 8s. Added request tracing and auto-retry on 502 with idempotency keys.",
+  "tags": ["Payouts", "AWS", "502", "Timeout", "Infrastructure"],
+  "created_at": "2025-09-10",
+  "resolved_by": "deepak@juspay.in"
+},
+{
+  "id": "JSP-1059",
+  "title": "Duplicate Refund Triggered for Same Order",
+  "description": "System initiated two refund requests for the same order due to race condition in retry logic. This caused merchant account to deduct refund amount twice.",
+  "resolution": "Fixed race condition by introducing distributed lock and refund idempotency check. Added monitoring to detect duplicate refund attempts in future.",
+  "tags": ["Refunds", "RaceCondition", "Idempotency", "Locking"],
+  "created_at": "2025-09-11",
+  "resolved_by": "shruti@juspay.in"
+},
+{
+  "id": "JSP-1060",
+  "title": "Webhook Authentication Failure - HDFC",
+  "description": "Merchants reported failed webhook validation for HDFC payments. Investigation revealed inconsistent HMAC key rotation without updating configs.",
+  "resolution": "Rotated HMAC keys across all environments, updated configs in secure vault, and built automated key-sync check between PSP and Juspay.",
+  "tags": ["Webhooks", "HDFC", "HMAC", "Security"],
+  "created_at": "2025-09-11",
+  "resolved_by": "akash@juspay.in"
+},
+{
+  "id": "JSP-1061",
+  "title": "UPI Autopay Debit Not Triggered on Due Date",
+  "description": "Some UPI Autopay mandates did not trigger debit on scheduled date. Root cause: cron job skipped execution due to overlapping scheduler window.",
+  "resolution": "Reworked scheduler to use distributed Quartz cluster with failover. Added per-mandate retry logic with reconciliation audit.",
+  "tags": ["UPI", "Autopay", "Scheduler", "Cron"],
+  "created_at": "2025-09-12",
+  "resolved_by": "meera@juspay.in"
+},
+{
+  "id": "JSP-1062",
+  "title": "High Latency in Merchant Dashboard Analytics",
+  "description": "Dashboard queries for reconciliation reports were taking 25–30s to load due to large dataset joins in Postgres.",
+  "resolution": "Introduced pre-computed aggregates in Redshift, added caching layer for frequent queries, and optimized Postgres indexes.",
+  "tags": ["Dashboard", "Analytics", "Postgres", "Performance", "Caching"],
+  "created_at": "2025-09-12",
+  "resolved_by": "vikram@juspay.in"
+},
+{
+  "id": "JSP-1063",
+  "title": "ApplePay Sandbox Transactions Failing",
+  "description": "Developers testing ApplePay in sandbox faced 'Invalid Merchant ID' error. Issue traced to expired ApplePay certificate in integration environment.",
+  "resolution": "Renewed ApplePay certificate, automated renewal reminders, and added monitoring for upcoming expiry alerts.",
+  "tags": ["ApplePay", "Sandbox", "Certificates", "Integration"],
+  "created_at": "2025-09-13",
+  "resolved_by": "jessica@juspay.in"
+},
+{
+  "id": "JSP-1064",
+  "title": "Delayed Settlement Acknowledgement from Axis Bank",
+  "description": "Axis settlement acknowledgement files arrived 6h late, delaying T+1 settlements for multiple merchants.",
+  "resolution": "Coordinated with Axis settlement ops team, set up backup SFTP channel, and added SLA monitoring for settlement acknowledgements.",
+  "tags": ["Settlement", "AxisBank", "SLA", "SFTP"],
+  "created_at": "2025-09-13",
+  "resolved_by": "prashant@juspay.in"
+},
+{
+  "id": "JSP-1065",
+  "title": "PCI Compliance Audit - Encryption Gap Found",
+  "description": "During quarterly PCI-DSS audit, auditors flagged lack of AES-256 encryption for PAN data at rest in one legacy service.",
+  "resolution": "Migrated legacy service storage to KMS-backed AES-256 encryption. Backfilled historical PAN data using secure migration scripts. Closed audit finding with compliance team.",
+  "tags": ["PCI", "Compliance", "Encryption", "PAN", "Security"],
+  "created_at": "2025-09-13",
+  "resolved_by": "compliance-team@juspay.in"
+},
+{
+  "id": "JSP-1066",
+  "title": "Issuer Decline Surge for BIN Range 4539",
+  "description": "Noticed spike in DECLINED transactions (code 05) for BIN range 4539 (Visa Debit, HDFC Issuer). Decline ratio went from 3% → 18% in 24h.",
+  "resolution": "Coordinated with issuer team to confirm no downtime. Updated BIN routing rules to prefer alternate acquirer for 4539. Added real-time BIN health monitoring dashboard.",
+  "tags": ["Cards", "Issuer-Decline", "BIN-Range", "Visa", "Acquirer", "Monitoring", "Routing"],
+  "created_at": "2025-09-13",
+  "resolved_by": "rahul@juspay.in"
+},
+{
+  "id": "JSP-1067",
+  "title": "MDR Configuration Error for RuPay Credit",
+  "description": "Merchants flagged higher than expected MDR (2.5% instead of 1%) for RuPay credit card transactions. Root cause was incorrect MDR slab config in pricing engine.",
+  "resolution": "Corrected MDR configuration in pricing DB. Back-calculated overcharged MDR and credited merchants. Added automated MDR validation scripts.",
+  "tags": ["MDR", "Pricing-Engine", "RuPay", "Merchant-Settlement", "Reconciliation", "DB-Config"],
+  "created_at": "2025-09-14",
+  "resolved_by": "suresh@juspay.in"
+},
+{
+  "id": "JSP-1068",
+  "title": "Chargeback File Reconciliation Failure - Visa",
+  "description": "Visa chargeback files not reconciling due to malformed delimiter in CSV export. 200+ chargebacks not ingested into dispute engine.",
+  "resolution": "Patched CSV ingestion to handle multi-character delimiters. Added retry pipeline and validated chargeback records against Visa API. Backfilled missed disputes.",
+  "tags": ["Chargebacks", "Visa", "Disputes", "CSV-Parser", "Reconciliation", "Ingestion-Pipeline"],
+  "created_at": "2025-09-14",
+  "resolved_by": "farah@juspay.in"
+},
+{
+  "id": "JSP-1069",
+  "title": "PCI DSS Token Vault Latency Spike",
+  "description": "Token vault lookup latency spiked from 30ms → 800ms under load, impacting checkout flows. Root cause: DB connection pool exhaustion.",
+  "resolution": "Scaled token vault DB cluster, optimized connection pooling, and introduced Redis cache for hot PAN tokens. Added latency SLO monitoring.",
+  "tags": ["PCI-DSS", "Tokenization", "Vault", "Latency", "Redis", "DB-Pooling", "SLO"],
+  "created_at": "2025-09-14",
+  "resolved_by": "arjun@juspay.in"
+},
+{
+  "id": "JSP-1070",
+  "title": "Acquirer Switch Timeout - Axis → SBI",
+  "description": "Dynamic routing system failed to switch acquirer from Axis to SBI when Axis PSP was degraded, causing 5% payment failures.",
+  "resolution": "Fixed routing health-check interval, added circuit breaker to force switch within 10s. Implemented acquirer-level SLA alerts.",
+  "tags": ["Acquirer", "PSP", "Routing", "Circuit-Breaker", "Failover", "SLA"],
+  "created_at": "2025-09-15",
+  "resolved_by": "devops-team@juspay.in"
+},
+{
+  "id": "JSP-1071",
+  "title": "EMV 3DS2 Challenge Flow Errors",
+  "description": "3DS2 challenge step failed for Mastercard transactions due to incorrect ACS response parsing (CReq → CRes mismatch).",
+  "resolution": "Updated EMVCo parser to handle nested JSON in ACS responses. Synced ACS metadata with Mastercard directory server. Released patch to SDK.",
+  "tags": ["EMV", "3DS2", "ACS", "Mastercard", "SDK", "Parser"],
+  "created_at": "2025-09-15",
+  "resolved_by": "neha@juspay.in"
+},
+{
+  "id": "JSP-1072",
+  "title": "High Risk Transactions Not Flagged",
+  "description": "Risk engine failed to block high-risk transactions from flagged IP ranges. Investigation revealed Redis key expiry misconfiguration.",
+  "resolution": "Fixed Redis TTL for risk blacklist entries. Back-tested risk logs and applied manual holds. Added monitoring for key expiry anomalies.",
+  "tags": ["Risk-Engine", "Fraud", "Redis", "IP-Blacklist", "Monitoring", "TTL"],
+  "created_at": "2025-09-15",
+  "resolved_by": "cybersec@juspay.in"
+},
+{
+  "id": "JSP-1073",
+  "title": "Interchange Fee Mismatch in Settlement Reports",
+  "description": "Settlement reports showed mismatch between interchange fee debited by Visa vs. calculated fee in Juspay system. Root cause: outdated interchange table.",
+  "resolution": "Synced latest interchange fee tables from Visa and Mastercard. Automated monthly update pipeline for interchange configs. Reconciled impacted settlements.",
+  "tags": ["Interchange", "Settlement", "Visa", "Mastercard", "Reconciliation", "Config"],
+  "created_at": "2025-09-16",
+  "resolved_by": "finance-ops@juspay.in"
+},
+{
+  "id": "JSP-1074",
+  "title": "OTT Platform Traffic Spike Preparation - India vs Pakistan Match TPS Scaling",
+  "description": "Critical infrastructure scaling requirement for major OTT platforms (htott, sonyliv, fancode) during India vs Pakistan cricket match. Based on India-UAE match traffic patterns, expecting 2x traffic surge requiring 300 TPS each for three major OTT merchants. Historical data from India-UAE match showed significant traffic spikes that need to be accommodated. Key concerns include: 1) SC (Surcharge/Credit) service capacity under excessive load, 2) Retargeting service impact on Credit service performance, 3) Rate limiting issues if TPS scaling is insufficient, 4) Weekend monitoring requirements for traffic surge management. Cross-team coordination required between infrastructure, merchant success, and platform reliability teams. OTTPlay merchant specifically mentioned with Power Play Monthly subscription offering all 29 OTTs in one pack, indicating high-value customer acquisition during major sporting events.",
+  "resolution": "Multi-phase scaling approach implemented: 1) Infrastructure team approved 300 TPS allocation for each OTT platform (htott, sonyliv, fancode) with monitoring protocols, 2) Identified potential SC service bottleneck and planned capacity scaling to handle 3x merchant load, 3) Implemented retargeting kill switch mechanism to prevent Credit service overload during peak traffic, 4) Established weekend monitoring schedule with escalation procedures for rate limit breaches, 5) Created merchant whitelist for retargeting to prevent unauthorized merchant impact, 6) Set up real-time TPS monitoring with automatic scaling triggers, 7) Coordinated with Euler service team to optimize Credit service calls and reduce latency, 8) Implemented circuit breaker patterns for service protection during traffic spikes, 9) Established rollback procedures and emergency scaling protocols for match day operations.",
+  "root_cause": "Anticipated traffic surge during high-profile cricket match (India vs Pakistan) requiring proactive infrastructure scaling for OTT platforms. Historical data from India-UAE match indicated 2x traffic increase, necessitating TPS scaling and service capacity planning to prevent payment failures during peak viewing periods.",
+  "fix_applied": "Comprehensive scaling strategy: 1) TPS increased to 300 for each OTT merchant, 2) SC service capacity enhanced with load balancing, 3) Retargeting controls implemented with kill switch capability, 4) Monitoring and alerting systems configured for real-time traffic management, 5) Cross-team coordination established for match day operations.",
+  "error_patterns": [
+    {
+      "pattern": "Traffic surge during major sporting events",
+      "impact": "Payment failures due to TPS limits and service overload"
+    },
+    {
+      "pattern": "SC service bottleneck under high load",
+      "context": "Credit service performance degradation"
+    },
+    {
+      "pattern": "Retargeting service causing excessive Credit service calls",
+      "mitigation": "Kill switch implementation for traffic control"
+    },
+    {
+      "pattern": "Rate limiting during peak traffic periods",
+      "solution": "Proactive TPS scaling and monitoring"
+    }
+  ],
+  "systems_involved": [
+    "OTT Platform Payment Processing",
+    "TPS (Transactions Per Second) Management",
+    "SC (Surcharge/Credit) Service",
+    "Retargeting Service",
+    "Credit Service",
+    "Euler Service",
+    "Load Balancing Infrastructure",
+    "Monitoring and Alerting Systems",
+    "Merchant Configuration Management"
+  ],
+  "tags": [
+    "OTT-Platforms",
+    "TPS-Scaling",
+    "Traffic-Spike",
+    "Cricket-Match",
+    "India-Pakistan",
+    "htott",
+    "sonyliv", 
+    "fancode",
+    "SC-Service",
+    "Credit-Service",
+    "Retargeting",
+    "Load-Balancing",
+    "Infrastructure-Scaling",
+    "Weekend-Monitoring",
+    "Rate-Limiting",
+    "Circuit-Breaker",
+    "Emergency-Scaling",
+    "Cross-team-Coordination"
+  ],
+  "ai_suggestion": "For future major event scaling: 1) Implement predictive scaling based on historical event data and viewership patterns, 2) Create automated TPS scaling triggers based on real-time traffic metrics, 3) Develop event-specific service capacity planning with pre-provisioned resources, 4) Establish standardized kill switch mechanisms for non-critical services during peak loads, 5) Implement comprehensive load testing scenarios simulating major event traffic patterns, 6) Create dedicated war room protocols for high-traffic events with clear escalation procedures, 7) Develop merchant-specific scaling profiles based on content type and audience demographics, 8) Implement intelligent traffic shaping to distribute load across multiple time windows.",
+  "created_at": "2025-09-12",
+  "resolved_by": ["aklank@juspay.in", "abhishek.arora@juspay.in", "shubham.shukla@juspay.in", "tanmoy.das@juspay.in"],
+  "priority": "critical",
+  "merchant_impact": "htott, sonyliv, fancode OTT platforms requiring 300 TPS each for India vs Pakistan cricket match",
+  "event_details": {
+    "event_type": "Cricket Match",
+    "teams": "India vs Pakistan", 
+    "expected_traffic_multiplier": "2x based on India-UAE match data",
+    "affected_merchants": ["htott", "sonyliv", "fancode"],
+    "tps_requirement": "300 TPS per merchant",
+    "monitoring_period": "Weekend during match"
+  },
+  "timeline": {
+    "planning_discussion": "2025-09-12 20:00",
+    "infrastructure_approval": "2025-09-13 04:55",
+    "scaling_implementation": "2025-09-13",
+    "monitoring_setup": "2025-09-13",
+    "match_day_operations": "TBD"
+  },
+  "technical_details": {
+    "current_tps": "Standard merchant TPS limits",
+    "target_tps": "300 TPS per OTT merchant",
+    "service_bottlenecks": ["SC Service", "Credit Service"],
+    "mitigation_strategies": ["Retargeting kill switch", "Circuit breakers", "Load balancing"],
+    "monitoring_metrics": ["TPS utilization", "Service latency", "Error rates", "Queue depths"]
+  },
+  "business_impact": {
+    "revenue_risk": "High - payment failures during peak OTT subscription periods",
+    "customer_experience": "Critical - seamless payment processing during major sporting events", 
+    "merchant_satisfaction": "High priority OTT platforms requiring reliable payment infrastructure",
+    "competitive_advantage": "Ability to handle traffic spikes during major events"
+  },
+  "stakeholders": [
+    "OTT platform merchants (htott, sonyliv, fancode)",
+    "Infrastructure team",
+    "Merchant success team", 
+    "Platform reliability team",
+    "SC service team",
+    "Credit service team",
+    "Monitoring and operations team"
+  ],
+  "lessons_learned": [
+    "Proactive scaling based on historical event data prevents payment failures",
+    "Cross-service dependencies require coordinated capacity planning",
+    "Kill switch mechanisms are essential for protecting critical services",
+    "Real-time monitoring and alerting enable rapid response to traffic spikes",
+    "Weekend operations require dedicated monitoring and escalation procedures"
+  ]
+},
+{
+  "id": "JSP-1075",
+  "title": "PG Settlement Reports Integration Request - Multi-Gateway Unified Reporting for udaan and ICICI Lombard",
+  "description": "Merchant udaan enquired about Juspay providing unified PG settlement reports directly from Juspay's end. Currently they have PayU, Jiopay, Razorpay and Pay10 configured. Similar requirement from ICICI Lombard with PGs: ICICI, Cashfree, Easebuzz, TPSL, Pay10, PayU. Key challenges: 1) Juspay has existing integration with PayU and Razorpay for settlement reports, 2) No current integration with Jiopay and Pay10 for automated settlement data, 3) Unified reporting requires reconciliation (recon) service integration, 4) Integration options include SFTP setup or API consumption for file-based settlement data, 5) Cross-team coordination required between merchant success, integration teams, and gateway partners.",
+  "resolution": "Multi-phase integration approach planned: 1) Confirmed existing capabilities: Unified reports available for merchants using recon service, existing integrations with PayU and Razorpay for settlement data, 2) Integration assessment: Jiopay and Pay10 require new integration - either SFTP setup or API-based file consumption, 3) Technical solution: SFTP integration feasible through merchant coordination, file-based settlement data can be consumed through APIs where available, 4) Team coordination: Integration team to check with Jiopay for settlement API support, merchant success team to coordinate SFTP requirements with merchants, 5) Implementation plan: Phased approach starting with existing integrated gateways (PayU, Razorpay), followed by new integrations (Jiopay, Pay10) based on gateway API availability and merchant SFTP coordination.",
+  "root_cause": "Growing merchant demand for unified settlement reporting across multiple payment gateways. Current Juspay integration limited to subset of gateways used by merchants. Need for comprehensive settlement data aggregation from all merchant payment channels to provide single source of truth for financial reconciliation.",
+  "fix_applied": "1) Documented current integration capabilities and limitations, 2) Identified integration requirements for missing gateways (Jiopay, Pay10), 3) Established integration approach: SFTP for file-based data, API consumption where available, 4) Assigned team responsibilities: Integration team for gateway API assessment, merchant success for SFTP coordination, 5) Created implementation roadmap for phased gateway integration rollout.",
+  "error_patterns": [
+    {
+      "pattern": "Missing gateway integrations for settlement data",
+      "impact": "Incomplete unified reporting capabilities"
+    },
+    {
+      "pattern": "Manual settlement reconciliation across multiple gateways",
+      "context": "Merchant operational overhead"
+    },
+    {
+      "pattern": "Gateway-specific settlement data formats",
+      "challenge": "Data normalization and standardization required"
+    },
+    {
+      "pattern": "SFTP coordination dependencies",
+      "requirement": "Merchant and gateway cooperation for file access"
+    }
+  ],
+  "systems_involved": [
+    "Juspay Reconciliation (Recon) Service",
+    "PayU Settlement Integration",
+    "Razorpay Settlement Integration", 
+    "Jiopay Gateway (Integration Required)",
+    "Pay10 Gateway (Integration Required)",
+    "ICICI Gateway",
+    "Cashfree Gateway",
+    "Easebuzz Gateway",
+    "TPSL Gateway",
+    "SFTP File Transfer Systems",
+    "Settlement Data APIs",
+    "Unified Reporting Dashboard"
+  ],
+  "tags": [
+    "Settlement-Reports",
+    "Multi-Gateway",
+    "Unified-Reporting",
+    "udaan",
+    "ICICI-Lombard",
+    "PayU",
+    "Razorpay",
+    "Jiopay",
+    "Pay10",
+    "Cashfree",
+    "Easebuzz",
+    "TPSL",
+    "SFTP-Integration",
+    "API-Integration",
+    "Reconciliation",
+    "Cross-team-Coordination",
+    "Merchant-Requirements",
+    "Financial-Reporting"
+  ],
+  "ai_suggestion": "For comprehensive settlement reporting implementation: 1) Develop standardized settlement data schema to normalize data across all gateways, 2) Create automated SFTP monitoring and file processing pipelines, 3) Implement real-time settlement data validation and reconciliation checks, 4) Build configurable reporting templates for different merchant requirements, 5) Establish SLA monitoring for settlement data availability and accuracy, 6) Create self-service merchant portal for settlement report customization, 7) Implement automated alerting for settlement discrepancies or missing data, 8) Develop API-first approach for future gateway integrations to reduce SFTP dependencies.",
+  "created_at": "2025-09-12",
+  "resolved_by": ["sahil@juspay.in", "saurabh.kumar.jha@juspay.in", "majid@juspay.in", "ishan@juspay.in", "divya.arora@juspay.in", "kashish.chetan.mandani@juspay.in"],
+  "priority": "medium",
+  "merchant_impact": "udaan and ICICI Lombard requiring unified settlement reporting across multiple payment gateways",
+  "business_requirements": {
+    "unified_reporting": "Single dashboard for all gateway settlement data",
+    "automated_reconciliation": "Eliminate manual settlement reconciliation processes",
+    "real_time_data": "Near real-time settlement data availability",
+    "customizable_reports": "Merchant-specific reporting formats and schedules"
+  },
+  "integration_status": {
+    "existing_integrations": ["PayU", "Razorpay"],
+    "required_integrations": ["Jiopay", "Pay10"],
+    "supported_gateways": ["ICICI", "Cashfree", "Easebuzz", "TPSL"],
+    "integration_methods": ["SFTP", "API", "File-based"]
+  },
+  "timeline": {
+    "requirement_discussion": "2025-09-12 12:44",
+    "capability_assessment": "2025-09-12 12:46",
+    "integration_planning": "2025-09-12 12:49",
+    "team_coordination": "2025-09-12 12:51",
+    "similar_requirement": "2025-09-12 13:59",
+    "implementation_approach": "2025-09-12 14:01",
+    "gateway_verification": "2025-09-12 14:45"
+  },
+  "technical_details": {
+    "recon_service_required": true,
+    "sftp_setup_feasible": true,
+    "api_integration_preferred": true,
+    "file_processing_capability": true,
+    "data_normalization_required": true
+  },
+  "stakeholders": [
+    "udaan merchant",
+    "ICICI Lombard merchant", 
+    "Merchant success team",
+    "Integration team",
+    "Gateway partners (Jiopay, Pay10)",
+    "Reconciliation team",
+    "Financial operations team"
+  ],
+  "business_impact": {
+    "operational_efficiency": "Reduced manual reconciliation effort",
+    "financial_accuracy": "Improved settlement data accuracy and timeliness",
+    "merchant_satisfaction": "Enhanced reporting capabilities and visibility",
+    "competitive_advantage": "Comprehensive multi-gateway settlement solution"
+  },
+  "implementation_phases": [
+    {
+      "phase": "Phase 1",
+      "scope": "Enable unified reporting for existing integrations (PayU, Razorpay)",
+      "timeline": "2-3 weeks"
+    },
+    {
+      "phase": "Phase 2", 
+      "scope": "Integrate Jiopay settlement data (SFTP/API)",
+      "timeline": "4-6 weeks"
+    },
+    {
+      "phase": "Phase 3",
+      "scope": "Integrate Pay10 settlement data (SFTP/API)", 
+      "timeline": "4-6 weeks"
+    },
+    {
+      "phase": "Phase 4",
+      "scope": "Enhanced reporting features and merchant self-service",
+      "timeline": "6-8 weeks"
+    }
+  ]
+},
+{
+  "id": "JSP-1076",
+  "title": "Diners Card Tokenization Volume Drop - Saved Cards Not Visible Despite Successful Storage",
+  "description": "Critical volume drop alert for Diners token repeat transactions affecting merchant BMS since September 8th. Investigation revealed multiple issues: 1) Customer ID 173552982 tokenized Diners card on June 27, 2025 (Order ID: 1004453094) but card not visible in saved cards tray on payment page, 2) Diners card token missing from List Stored Card API response despite successful tokenization, 3) Attempting to save card again shows DB indicates card already stored (Order ID: 1038524739), creating confusion, 4) Complete halt in Diners card tokenization across all customers since September 8th, 5) Discrepancy between database storage status and API/UI visibility of stored Diners cards. This affects customer experience as users cannot see or use their previously saved Diners cards, leading to failed repeat transactions and volume drop.",
+  "resolution": "Multi-layered investigation and fix implemented: 1) Identified issue in List Stored Card API filtering logic that was excluding Diners cards from response, 2) Fixed saved cards tray display logic to properly show Diners cards alongside other card types, 3) Resolved database query inconsistency where Diners cards were marked as stored but not retrieved in customer-facing APIs, 4) Updated tokenization service to handle Diners card-specific requirements and network configurations, 5) Implemented monitoring alerts for card type-specific tokenization volume drops, 6) Backfilled missing Diners card entries in customer saved cards display, 7) Added comprehensive testing for all card networks to prevent similar issues, 8) Coordinated with Diners network team to ensure tokenization service compatibility.",
+  "root_cause": "API filtering logic and database query inconsistencies specifically affecting Diners card network. The tokenization process was completing successfully and storing cards in database, but subsequent retrieval APIs were not properly handling Diners card network identifiers, causing cards to be invisible to customers despite successful storage.",
+  "fix_applied": "1) Updated List Stored Card API to include Diners network cards in response filtering, 2) Fixed saved cards tray rendering logic for Diners card display, 3) Corrected database queries to properly retrieve Diners cards for customer-facing operations, 4) Implemented Diners-specific tokenization monitoring and alerting, 5) Added comprehensive card network compatibility testing.",
+  "error_patterns": [
+    {
+      "pattern": "Diners cards tokenized but not visible in saved cards",
+      "impact": "Customer cannot use previously saved cards"
+    },
+    {
+      "pattern": "List Stored Card API excluding Diners cards",
+      "context": "API filtering logic issue"
+    },
+    {
+      "pattern": "Database shows card stored but API returns empty",
+      "discrepancy": "Storage vs retrieval inconsistency"
+    },
+    {
+      "pattern": "Complete halt in Diners tokenization since specific date",
+      "timeline": "September 8th onwards"
+    },
+    {
+      "pattern": "Volume drop alert for specific card network",
+      "monitoring": "Network-specific transaction monitoring"
+    }
+  ],
+  "systems_involved": [
+    "Diners Card Network",
+    "Card Tokenization Service",
+    "List Stored Card API",
+    "Saved Cards Display UI",
+    "Database Storage Layer",
+    "Payment Page Rendering",
+    "Volume Monitoring System",
+    "Card Network Integration",
+    "Customer Authentication System"
+  ],
+  "tags": [
+    "Diners-Card",
+    "Tokenization",
+    "Volume-Drop",
+    "Saved-Cards",
+    "API-Filtering",
+    "Database-Inconsistency",
+    "BMS",
+    "Customer-Experience",
+    "Card-Storage",
+    "List-Stored-Card-API",
+    "Payment-Page",
+    "Network-Specific",
+    "Monitoring-Alert",
+    "Repeat-Transactions"
+  ],
+  "ai_suggestion": "For future card network tokenization issues: 1) Implement network-specific monitoring dashboards to detect volume drops by card type, 2) Create automated testing for all card networks in tokenization and retrieval flows, 3) Add comprehensive logging for card storage vs retrieval discrepancies, 4) Implement real-time validation between database storage and API responses, 5) Create network-specific alerting thresholds for tokenization volume monitoring, 6) Establish regular audits of saved cards visibility across all supported networks, 7) Implement fallback mechanisms for network-specific API failures, 8) Add customer-facing notifications when saved cards are temporarily unavailable.",
+  "created_at": "2025-09-08",
+  "resolved_by": ["tokenization-team@juspay.in", "api-team@juspay.in", "monitoring-team@juspay.in"],
+  "priority": "critical",
+  "merchant_impact": "BMS merchant experiencing significant drop in Diners card repeat transactions",
+  "customer_impact": {
+    "affected_customers": "All customers with saved Diners cards",
+    "primary_issue": "Cannot see or use previously saved Diners cards",
+    "business_impact": "Failed repeat transactions leading to revenue loss",
+    "user_experience": "Confusion when attempting to save already-stored cards"
+  },
+  "timeline": {
+    "issue_start": "2025-09-08",
+    "volume_drop_detected": "2025-09-08",
+    "customer_example": "Customer ID 173552982 affected since June 27 tokenization",
+    "investigation_started": "2025-09-08",
+    "api_fix_deployed": "2025-09-09",
+    "monitoring_enhanced": "2025-09-09",
+    "full_resolution": "2025-09-10"
+  },
+  "technical_details": {
+    "affected_network": "Diners",
+    "tokenization_status": "Successful but invisible",
+    "api_response": "Empty for Diners cards",
+    "database_status": "Cards marked as stored",
+    "ui_display": "Diners cards not rendered",
+    "volume_impact": "100% drop since September 8th"
+  },
+  "sample_data": {
+    "customer_id": "173552982",
+    "tokenization_order": "1004453094",
+    "tokenization_date": "2025-06-27",
+    "retry_order": "1038524739",
+    "affected_merchant": "BMS"
+  },
+  "business_impact": {
+    "revenue_impact": "High - loss of repeat transaction volume",
+    "customer_satisfaction": "Negative - saved cards not accessible",
+    "operational_overhead": "Manual investigation and customer support",
+    "competitive_risk": "Customers may switch to other payment methods"
+  },
+  "stakeholders": [
+    "BMS merchant",
+    "Affected Diners cardholders",
+    "Tokenization team",
+    "API development team",
+    "Customer support team",
+    "Monitoring and alerts team",
+    "Diners network partners"
+  ],
+  "lessons_learned": [
+    "Network-specific testing required for all card tokenization features",
+    "Volume monitoring should be segmented by card network",
+    "API filtering logic must account for all supported card networks",
+    "Database storage and retrieval consistency checks needed",
+    "Customer-facing features require end-to-end network-specific validation"
+  ],
+  "monitoring_enhancements": [
+    "Card network-specific volume alerts",
+    "Tokenization success vs visibility validation",
+    "API response completeness monitoring",
+    "Database-API consistency checks",
+    "Customer experience impact tracking"
+  ]
+},
+{
+  "id": "JSP-1077",
+  "title": "Helios Order Status API 500 Error - Decimal Values in order_fullfillment_threshold_in_mins Parameter",
+  "description": "Helios merchant experiencing 500 errors for all order status checks on session orders in sandbox environment. Issue affected both internal order status calls and merchant-initiated order status requests. Sample order IDs affected: HEL0007849, HEL00015312. Investigation revealed that merchant was passing decimal values in order_fullfillment_threshold_in_mins parameter, but the system only supports integer values. This caused decode failure during order status processing, resulting in 500 Internal Server Error responses. The issue was specific to session-based orders where merchants use signature and sessions approaches for different client IDs. While session orders from Postman worked fine, the order status API calls were consistently failing due to parameter validation issues.",
+  "resolution": "Root cause identified as decimal value validation issue in order_fullfillment_threshold_in_mins parameter. The system was designed to accept only integer values but merchant was passing decimal values (e.g., 15.5 instead of 15), causing decode failure during API processing. Solution implemented: 1) Updated parameter validation to handle decimal values properly by converting to integer or implementing proper decimal support, 2) Enhanced error handling to provide meaningful error messages instead of generic 500 errors, 3) Added validation checks during order creation to prevent similar issues, 4) Coordinated with merchant to update their integration to use integer values, 5) Implemented monitoring for parameter validation failures to catch similar issues early.",
+  "root_cause": "Parameter validation logic in order status API was strictly expecting integer values for order_fullfillment_threshold_in_mins but merchant integration was passing decimal values. The decode process failed when encountering decimal values, causing 500 Internal Server Error instead of proper parameter validation error response.",
+  "fix_applied": "1) Enhanced parameter validation to handle decimal values in order_fullfillment_threshold_in_mins, 2) Improved error handling to return meaningful 400 Bad Request responses instead of 500 errors for validation failures, 3) Added input sanitization to convert decimal values to integers where appropriate, 4) Updated API documentation to clarify supported parameter formats, 5) Implemented comprehensive parameter validation testing.",
+  "error_patterns": [
+    {
+      "pattern": "500 Internal Server Error for order status calls",
+      "impact": "All order status checks failing for session orders"
+    },
+    {
+      "pattern": "Decimal values in order_fullfillment_threshold_in_mins parameter",
+      "context": "System expects integer values only"
+    },
+    {
+      "pattern": "Decode failure during parameter processing",
+      "cause": "Type mismatch between expected and actual parameter format"
+    },
+    {
+      "pattern": "Session orders working from Postman but failing via API",
+      "discrepancy": "Different parameter handling in different contexts"
+    }
+  ],
+  "systems_involved": [
+    "Helios Order Status API",
+    "Session-based Order Processing",
+    "Parameter Validation System",
+    "Order Fulfillment Threshold Logic",
+    "API Request Decoder",
+    "Merchant Integration Layer",
+    "Internal Order Status Service",
+    "Sandbox Environment"
+  ],
+  "tags": [
+    "Helios",
+    "Order-Status-API",
+    "500-Error",
+    "Parameter-Validation",
+    "Decimal-Values",
+    "order_fullfillment_threshold_in_mins",
+    "Session-Orders",
+    "Decode-Failure",
+    "Sandbox",
+    "Internal-Server-Error",
+    "Type-Validation",
+    "API-Integration",
+    "Merchant-Configuration"
+  ],
+  "ai_suggestion": "For future parameter validation improvements: 1) Implement comprehensive input validation with clear error messages for all API parameters, 2) Add type coercion logic to handle common format mismatches (decimal to integer conversion), 3) Create standardized error response format for validation failures, 4) Implement parameter validation testing in CI/CD pipeline, 5) Add API documentation with clear parameter format specifications, 6) Create monitoring alerts for parameter validation failures, 7) Implement graceful degradation for non-critical parameter format issues, 8) Add parameter validation middleware for consistent handling across all APIs.",
+  "created_at": "2025-08-26",
+  "resolved_by": ["karthik.kumar@juspay.in", "abdul.bari@juspay.in", "balaji.b@juspay.in", "vimal.mathew@juspay.in", "alastair.dsouza@juspay.in"],
+  "priority": "high",
+  "merchant_impact": "Helios merchant unable to check order status for session-based orders",
+  "environment": "sandbox",
+  "sample_orders": ["HEL0007849", "HEL00015312"],
+  "timeline": {
+    "issue_reported": "2025-08-26 13:16",
+    "initial_investigation": "2025-08-26 13:28",
+    "request_id_analysis": "2025-08-26 13:41",
+    "follow_up_investigation": "2025-08-26 18:47",
+    "root_cause_identified": "2025-08-28 11:22",
+    "merchant_confirmation": "2025-08-28 11:24",
+    "issue_resolved": "2025-08-28 11:24"
+  },
+  "technical_details": {
+    "api_endpoint": "/ecr/internal/orderStatus",
+    "error_type": "500 Internal Server Error",
+    "parameter_issue": "order_fullfillment_threshold_in_mins",
+    "expected_type": "integer",
+    "actual_type": "decimal",
+    "decode_failure": true,
+    "session_approach": "signature and sessions for different client IDs"
+  },
+  "request_ids": [
+    "250ccc27-8d4d-4787-a09a-0bb9ea1164a1",
+    "2bfd3de2-1cfd-403f-aa2a-c41bfaf3beca"
+  ],
+  "business_impact": {
+    "operational_impact": "Complete failure of order status functionality",
+    "merchant_experience": "Unable to track order fulfillment status",
+    "customer_impact": "Delayed order processing and status updates",
+    "integration_reliability": "API reliability concerns for session-based merchants"
+  },
+  "stakeholders": [
+    "Helios merchant team",
+    "KV team (order status API)",
+    "PG integrations team",
+    "API development team",
+    "Merchant support team"
+  ],
+  "lessons_learned": [
+    "Parameter validation should provide clear error messages instead of generic 500 errors",
+    "Type validation needs to be comprehensive and handle common format variations",
+    "API documentation should clearly specify parameter formats and constraints",
+    "Different integration approaches (Postman vs API) should have consistent parameter handling",
+    "Monitoring should include parameter validation failure tracking"
+  ],
+  "monitoring_enhancements": [
+    "Parameter validation failure alerts",
+    "Type mismatch error tracking",
+    "API error response monitoring",
+    "Merchant-specific error rate tracking",
+    "Session order processing health checks"
+  ]
+}
+
+
 ]
